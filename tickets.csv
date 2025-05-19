@@ -1,0 +1,3 @@
+ticket_id,summary,description,resolution,email
+1,VPN not connecting,User unable to connect to VPN,Restart VPN service,spkincident@gmail.com
+2,Outlook issue,Outlook not syncing emails,Clear cache and reconfigure,spkincident@gmail.com
