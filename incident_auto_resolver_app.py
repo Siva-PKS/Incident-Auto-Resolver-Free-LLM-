@@ -32,7 +32,7 @@ SMTP_PASSWORD = "jaao zsnq peke klgo"
 # ---------------------
 # 🙵 Logging configuration
 # ---------------------
-logging.basicConfig(filename='email_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+#logging.basicConfig(filename='email_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ---------------------
 # 🗕 Load tickets
