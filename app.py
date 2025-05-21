@@ -1,3 +1,12 @@
+import subprocess
+import sys
+
+try:
+    import sentence_transformers
+except ModuleNotFoundError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "sentence-transformers"])
+
 import streamlit as st
 import pandas as pd
 import numpy as np
