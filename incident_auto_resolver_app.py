@@ -192,6 +192,8 @@ if st.button("Resolve Ticket"):
 
            manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
+ manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
+
 if st.button("✉️ Send Suggested Resolution Email"):
     manual_email = st.session_state.get("manual_email", "").strip()
     if not manual_email:
