@@ -126,22 +126,40 @@ def load_llm_pipeline():
 llm_pipeline = load_llm_pipeline()
 
 def generate_llm_response(description, retrieved_df):
-    # Format the context with line breaks and bold labels
+    """
+    Generates a suggested resolution using a local LLM based on the given incident description
+    and retrieved similar past tickets. Also returns a formatted prompt for display.
+    """
+
+    # Create a formatted context from the retrieved tickets
     context = "\n\n".join([
-        f"**Ticket ID:** {row.ticket_id}\n**Summary:** {row.summary}\n**Description:** {row.description}\n**Resolution:** {row.resolution}"
+        f"**Ticket ID:** {row.ticket_id}\n"
+        f"**Summary:** {row.summary}\n"
+        f"**Description:** {row.description}\n"
+        f"**Resolution:** {row.resolution}"
         for _, row in retrieved_df.iterrows()
     ])
 
-    # Format the prompt with bold sections
-    formatted_prompt = f"""**User Issue:**\n{description}\n\n**Previous Ticket Context:**\n{context}\n\n**Suggest a resolution:**"""
+    # Build the prompt for LLM input (plain version for inference)
+    llm_prompt = (
+        f"User Issue:\n{description}\n\n"
+        f"Previous Ticket Context:\n{context}\n\n"
+        f"Suggest a resolution:"
+    )
 
-    # Generate response
-    output = llm_pipeline(f"User Issue:\n{description}\n\nPrevious Ticket Context:\n{context}\n\nSuggest a resolution:", max_new_tokens=200)
-    
-    # Format the generated text to include line breaks
+    # Run LLM generation
+    output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].replace('. ', '.\n')
 
+    # Format the prompt for display with bold headers
+    formatted_prompt = (
+        f"**User Issue:**\n{description}\n\n"
+        f"**Previous Ticket Context:**\n{context}\n\n"
+        f"**Suggest a resolution:**"
+    )
+
     return formatted_prompt, generated_text
+
 
 
 # ---------------------
