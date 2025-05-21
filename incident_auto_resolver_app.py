@@ -127,10 +127,11 @@ llm_pipeline = load_llm_pipeline()
 
 def generate_llm_response(description, retrieved_df):
     # Create formatted context from retrieved tickets
-  context = "\n\n".join([
+    context = "\n\n".join([
     f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
     for _, row in retrieved_df.iterrows()
 ])
+
 
 
     # Prompt for LLM
