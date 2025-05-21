@@ -190,29 +190,31 @@ if st.button("Resolve Ticket"):
             st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
 
-            manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
+           manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
-            if st.button("✉️ Send Suggested Resolution Email"):
-                manual_email = st.session_state.get("manual_email", "").strip()
-                if not manual_email:
-                    st.warning("Please enter an email address to send the suggested resolution.")
-                else:
-                    email_sent = send_email(
-                        subject="Suggested Resolution to Your Reported Issue",
-                        body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
-                        to_email=manual_email
-                    )
-                    if email_sent:
-                        st.success(f"📤 Suggested resolution emailed to `{manual_email}`.")
-                        st.markdown("✅ Email dispatch logged. You can check `email_log.txt` for record.")
-                        st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{suggestion}", language='text')
-                    else:
-                        st.error("❌ Failed to send the email. Please check the address or try again later.")
+if st.button("✉️ Send Suggested Resolution Email"):
+    manual_email = st.session_state.get("manual_email", "").strip()
+    if not manual_email:
+        st.warning("Please enter an email address to send the suggested resolution.")
+    else:
+        email_sent = send_email(
+            subject="Suggested Resolution to Your Reported Issue",
+            body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
+            to_email=manual_email
+        )
+        st.write(f"send_email returned: {email_sent}")  # Debug output
 
-            with st.expander("📄 View Email Log"):
-                try:
-                    with open("email_log.txt", "r") as f:
-                        log_content = f.read()
-                    st.text_area("Email Log", log_content, height=200)
-                except FileNotFoundError:
-                    st.info("No email log found yet.")
+        if email_sent:
+            st.success(f"📤 Suggested resolution emailed to {manual_email}.")
+            st.markdown("✅ Email dispatch logged. You can check `email_log.txt` for record.")
+            st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{suggestion}", language='text')
+        else:
+            st.error("❌ Failed to send the email. Please check the address or try again later.")
+
+with st.expander("📄 View Email Log"):
+    try:
+        with open("email_log.txt", "r") as f:
+            log_content = f.read()
+        st.text_area("Email Log", log_content, height=200)
+    except FileNotFoundError:
+        st.info("No email log found yet.")
