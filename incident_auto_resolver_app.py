@@ -1,3 +1,4 @@
+
 # Fix for: "RuntimeError: no running event loop" on Python 3.10+
 import asyncio
 import sys
@@ -10,8 +11,6 @@ if sys.platform.startswith('linux') and sys.version_info >= (3, 10):
 
 import os
 os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
-
-
 
 import streamlit as st
 import pandas as pd
@@ -185,8 +184,13 @@ if st.button("Resolve Ticket"):
             st.subheader("🤖 Suggested Resolution")
             st.write(suggestion)
 
-            manual_email = st.text_input("Enter email to send suggested resolution:")
+            if "manual_email" not in st.session_state:
+                st.session_state.manual_email = ""
+
+            st.text_input("Enter email to send suggested resolution:", key="manual_email")
+
             if st.button("✉️ Send Suggested Resolution Email"):
+                manual_email = st.session_state.manual_email
                 if not manual_email:
                     st.warning("Please enter an email address to send the suggested resolution.")
                 else:
@@ -196,4 +200,4 @@ if st.button("Resolve Ticket"):
                         to_email=manual_email
                     )
                     if email_sent:
-                        st.success("📤 Suggested resolution emailed.")
+                        st.success(f"📤 Suggested resolution emailed to {manual_email}.")
