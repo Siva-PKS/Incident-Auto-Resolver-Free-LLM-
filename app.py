@@ -1,3 +1,14 @@
+# Fix for: "RuntimeError: no running event loop" on Python 3.10+
+import asyncio
+import sys
+
+if sys.platform.startswith('linux') and sys.version_info >= (3, 10):
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
+
 
 import streamlit as st
 import pandas as pd
