@@ -1,0 +1,5 @@
+[server]
+enableCORS = false
+
+[runner]
+runOnStart = "bash setup.sh"
