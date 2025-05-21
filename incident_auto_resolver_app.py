@@ -198,7 +198,19 @@ if st.button("Resolve Ticket"):
                         body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
                         to_email=manual_email
                     )
-                    if email_sent:
-                        st.success(f"📤 Suggested resolution emailed to {manual_email}.")
-                    else:
-                        st.error("❌ Failed to send the email. Please check the address or try again later.")
+                   if email_sent:
+                    st.success(f"📤 Suggested resolution emailed to `{manual_email}`.")
+                    st.markdown("✅ Email dispatch logged. You can check `email_log.txt` for record.")
+                    st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{suggestion}", language='text')
+                else:
+                    st.error("❌ Failed to send the email. Please check the address or try again later.")
+
+                with st.expander("📄 View Email Log"):
+                    try:
+                        with open("email_log.txt", "r") as f:
+                            log_content = f.read()
+                        st.text_area("Email Log", log_content, height=200)
+                    except FileNotFoundError:
+                        st.info("No email log found yet.")
+
+
