@@ -3,7 +3,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import faiss
+from sklearn.neighbors import NearestNeighbors
 from sentence_transformers import SentenceTransformer
 import datetime
 import requests
@@ -16,24 +16,24 @@ df = pd.read_csv('tickets.csv')
 df = df.dropna()
 df.columns = [col.lower().replace(" ", "_") for col in df.columns]
 
-# Embedding model & FAISS index
+# Embedding model & Nearest Neighbors index
 @st.cache_resource
 def load_model_and_embeddings():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     temp_df = df.copy()
     temp_df['embedding'] = temp_df['description'].apply(lambda x: model.encode(x).tolist())
-    embeddings = np.array(temp_df['embedding'].to_list()).astype('float32')
-    index = faiss.IndexFlatL2(embeddings.shape[1])
-    index.add(embeddings)
-    return model, index, temp_df
+    embeddings = np.vstack(temp_df['embedding'].to_list()).astype('float32')
+    nn = NearestNeighbors(n_neighbors=3, metric='cosine')
+    nn.fit(embeddings)
+    return model, nn, embeddings, temp_df
 
-model, index, df = load_model_and_embeddings()
+model, nn_model, embeddings, df = load_model_and_embeddings()
 
 # Retrieve similar tickets
 def retrieve_similar(description, k=3):
     query_embedding = model.encode([description]).astype('float32')
-    D, I = index.search(query_embedding, k)
-    return df.iloc[I[0]]
+    distances, indices = nn_model.kneighbors(query_embedding, n_neighbors=k)
+    return df.iloc[indices[0]]
 
 # Free LLM via Hugging Face
 def generate_llm_response(description, retrieved_df, hf_token):
