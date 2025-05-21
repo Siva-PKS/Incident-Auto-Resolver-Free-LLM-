@@ -1,19 +1,20 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import openai
 from sentence_transformers import SentenceTransformer
+from transformers import pipeline
 
 # ---------------------
 # 🔐 SMTP CONFIGURATION
 # ---------------------
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USER = "spkincident@gmail.com"         # 👈 Replace with your email
-SMTP_PASSWORD = "jaao zsnq peke klgo"   # 👈 Use Gmail App Password
+SMTP_USER = "spkincident@gmail.com"
+SMTP_PASSWORD = "jaao zsnq peke klgo"
 
 # ---------------------
 # 📥 Load tickets
@@ -34,7 +35,7 @@ closed_df = load_closed_tickets()
 open_df = load_open_tickets()
 
 # ---------------------
-# 🔍 Load model & embeddings on closed tickets only
+# 🔍 Load model & embeddings
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_model_and_embeddings(df):
@@ -47,7 +48,7 @@ def load_model_and_embeddings(df):
 model, embeddings, closed_df = load_model_and_embeddings(closed_df)
 
 # ---------------------
-# 🔍 Similarity & exact match on closed tickets
+# 🔍 Similarity Search
 # ---------------------
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
@@ -63,20 +64,16 @@ def find_exact_match(description):
     match_rows = closed_df[closed_df['description'].str.lower() == desc_lower]
     return match_rows.iloc[0] if not match_rows.empty else None
 
-# ---------------------
-# 🔍 Check open tickets for same description, assignedgroup & closed status
-# ---------------------
 def check_open_tickets_for_auto_email(description, assigned_group):
     desc_lower = description.lower()
     assigned_group_lower = assigned_group.lower()
-
     filtered = open_df[
         (open_df['description'].str.lower() == desc_lower) &
         (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
         (open_df['status'].str.lower() == 'closed')
     ]
     if not filtered.empty:
-        return filtered.iloc[0]  # return first match
+        return filtered.iloc[0]
     return None
 
 # ---------------------
@@ -101,67 +98,48 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# 🤖 GPT-3.5 Turbo + RAG resolution
+# 🤖 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
+@st.cache_resource(show_spinner=False)
+def load_llm_pipeline():
+    return pipeline("text2text-generation", model="google/flan-t5-base")
 
-from openai import OpenAI
+llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response_openai(description, retrieved_df, openai_api_key):
-    client = OpenAI(api_key=openai_api_key)
-
-    context = '\n\n'.join([
-        f"Ticket ID: {row.ticket_id}\nSummary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}\nAssigned Group: {row.assignedgroup}\nStatus: {row.status}\nDate: {row.date}"
+def generate_llm_response(description, retrieved_df):
+    context = "\n\n".join([
+        f"Ticket ID: {row.ticket_id}\nSummary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
         for _, row in retrieved_df.iterrows()
     ])
 
-    prompt = f"""You are a helpful IT support assistant.
+    prompt = f"""User Issue:
+{description}
 
-The user reported the following issue:
-
-\"\"\"{description}\"\"\"
-
-Here are similar past tickets and their resolutions:
-
+Previous Ticket Context:
 {context}
 
-Based on this, provide a concise and helpful resolution for the user's issue."""
+Suggest a resolution:"""
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful support assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=500,
-            temperature=0.7,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        st.error(f"OpenAI API error: {e}")
-        return "Failed to generate a resolution."
-
+    output = llm_pipeline(prompt, max_new_tokens=200)
+    return output[0]['generated_text']
 
 # ---------------------
 # 🌐 Streamlit UI
 # ---------------------
-st.title("🎫 Incident Auto-Resolver (RAG + GPT-3.5 + Auto Email)")
+st.title("🎫 Incident Auto-Resolver (RAG + Local LLM + Auto Email)")
 
 desc_input = st.text_area("📝 Enter new incident description:")
 user_email = st.text_input("📧 Customer Email")
-openai_api_key = st.text_input("🔑 OpenAI API Key", type="password")
 
 if st.button("Resolve Ticket"):
-    if not desc_input or not user_email or not openai_api_key:
-        st.warning("Please fill in the incident description, email, and API key.")
+    if not desc_input or not user_email:
+        st.warning("Please fill in the incident description and email.")
     else:
-        # 1. Check exact match in closed tickets
         match = find_exact_match(desc_input)
         if match is not None:
             st.success("✅ Exact match found!")
             st.write("**Resolution:**", match['resolution'])
 
-            # Check open tickets for auto email (matching assigned group & closed status)
             auto_email_ticket = check_open_tickets_for_auto_email(match['description'], match['assignedgroup'])
             if auto_email_ticket is not None:
                 auto_email = auto_email_ticket.get('email', None)
@@ -176,7 +154,6 @@ if st.button("Resolve Ticket"):
                 else:
                     st.warning("No email found in matching open ticket for auto sending.")
             else:
-                # No matching open ticket for auto email; send to user email manually
                 email_sent = send_email(
                     subject=f"Issue Resolved: {match['description']}",
                     body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
@@ -190,11 +167,10 @@ if st.button("Resolve Ticket"):
             st.subheader("🧾 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
-            suggestion = generate_llm_response_openai(desc_input, retrieved, openai_api_key)
+            suggestion = generate_llm_response(desc_input, retrieved)
             st.subheader("🤖 Suggested Resolution")
             st.write(suggestion)
 
-            # Show input box for manual email send
             manual_email = st.text_input("Enter email to send suggested resolution:")
             if st.button("✉️ Send Suggested Resolution Email"):
                 if not manual_email:
