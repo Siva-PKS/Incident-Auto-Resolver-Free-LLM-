@@ -195,6 +195,7 @@ if st.button("Resolve Ticket"):
 
 # --- Manual email sending of suggested resolution ---
 
+# --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
     manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
@@ -214,3 +215,4 @@ if 'suggestion' in st.session_state:
                 st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
             else:
                 st.error("❌ Failed to send the email. Please check the address or try again later.")
+
