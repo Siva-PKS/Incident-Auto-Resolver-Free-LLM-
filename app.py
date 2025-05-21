@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import datetime
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -17,16 +16,26 @@ SMTP_USER = "xxxxxxx@gmail.com"         # 👈 Replace with your email
 SMTP_PASSWORD = "jaao zsnq peke klgo"   # 👈 Use Gmail App Password
 
 # ---------------------
-# 📥 Load and embed tickets
+# 📥 Load tickets
 # ---------------------
 @st.cache_data(show_spinner=False)
-def load_tickets():
-    df = pd.read_csv('tickets.csv').dropna()
+def load_closed_tickets():
+    df = pd.read_csv('tickets_closed.csv').dropna()
     df.columns = [col.lower().replace(" ", "_") for col in df.columns]
     return df
 
-df = load_tickets()
+@st.cache_data(show_spinner=False)
+def load_open_tickets():
+    df = pd.read_csv('tickets_open.csv').dropna()
+    df.columns = [col.lower().replace(" ", "_") for col in df.columns]
+    return df
 
+closed_df = load_closed_tickets()
+open_df = load_open_tickets()
+
+# ---------------------
+# 🔍 Load model & embeddings on closed tickets only
+# ---------------------
 @st.cache_resource(show_spinner=False)
 def load_model_and_embeddings(df):
     model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -35,10 +44,10 @@ def load_model_and_embeddings(df):
     embeddings = np.vstack(df['embedding'].to_list()).astype('float32')
     return model, embeddings, df
 
-model, embeddings, df = load_model_and_embeddings(df)
+model, embeddings, closed_df = load_model_and_embeddings(closed_df)
 
 # ---------------------
-# 🔍 Similar ticket retrieval
+# 🔍 Similarity & exact match on closed tickets
 # ---------------------
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
@@ -47,12 +56,28 @@ def retrieve_similar(description, k=3):
     query_emb = model.encode(description).astype('float32')
     sims = np.array([cosine_similarity(query_emb, emb) for emb in embeddings])
     indices = sims.argsort()[-k:][::-1]
-    return df.iloc[indices]
+    return closed_df.iloc[indices]
 
 def find_exact_match(description):
     desc_lower = description.lower()
-    match_rows = df[df['description'].str.lower() == desc_lower]
+    match_rows = closed_df[closed_df['description'].str.lower() == desc_lower]
     return match_rows.iloc[0] if not match_rows.empty else None
+
+# ---------------------
+# 🔍 Check open tickets for same description, assignedgroup & closed status
+# ---------------------
+def check_open_tickets_for_auto_email(description, assigned_group):
+    desc_lower = description.lower()
+    assigned_group_lower = assigned_group.lower()
+
+    filtered = open_df[
+        (open_df['description'].str.lower() == desc_lower) &
+        (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
+        (open_df['status'].str.lower() == 'closed')
+    ]
+    if not filtered.empty:
+        return filtered.iloc[0]  # return first match
+    return None
 
 # ---------------------
 # 📧 Email sender
@@ -76,7 +101,7 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# 🤖 GPT-3.5 Turbo based resolution
+# 🤖 GPT-3.5 Turbo + RAG resolution
 # ---------------------
 def generate_llm_response_openai(description, retrieved_df, openai_api_key):
     openai.api_key = openai_api_key
@@ -126,18 +151,35 @@ if st.button("Resolve Ticket"):
     if not desc_input or not user_email or not openai_api_key:
         st.warning("Please fill in the incident description, email, and API key.")
     else:
+        # 1. Check exact match in closed tickets
         match = find_exact_match(desc_input)
         if match is not None:
             st.success("✅ Exact match found!")
             st.write("**Resolution:**", match['resolution'])
 
-            email_sent = send_email(
-                subject=f"Issue Resolved: {match['description']}",
-                body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
-                to_email=user_email
-            )
-            if email_sent:
-                st.info("📩 Resolution email sent.")
+            # Check open tickets for auto email (matching assigned group & closed status)
+            auto_email_ticket = check_open_tickets_for_auto_email(match['description'], match['assignedgroup'])
+            if auto_email_ticket is not None:
+                auto_email = auto_email_ticket.get('email', None)
+                if auto_email:
+                    email_sent = send_email(
+                        subject=f"Issue Resolved: {match['description']}",
+                        body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
+                        to_email=auto_email
+                    )
+                    if email_sent:
+                        st.info(f"📩 Resolution email sent automatically to {auto_email}")
+                else:
+                    st.warning("No email found in matching open ticket for auto sending.")
+            else:
+                # No matching open ticket for auto email; send to user email manually
+                email_sent = send_email(
+                    subject=f"Issue Resolved: {match['description']}",
+                    body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
+                    to_email=user_email
+                )
+                if email_sent:
+                    st.info("📩 Resolution email sent to your provided email.")
         else:
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input)
@@ -148,11 +190,16 @@ if st.button("Resolve Ticket"):
             st.subheader("🤖 Suggested Resolution")
             st.write(suggestion)
 
+            # Show input box for manual email send
+            manual_email = st.text_input("Enter email to send suggested resolution:")
             if st.button("✉️ Send Suggested Resolution Email"):
-                email_sent = send_email(
-                    subject="Suggested Resolution to Your Reported Issue",
-                    body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
-                    to_email=user_email
-                )
-                if email_sent:
-                    st.success("📤 Suggested resolution emailed.")
+                if not manual_email:
+                    st.warning("Please enter an email address to send the suggested resolution.")
+                else:
+                    email_sent = send_email(
+                        subject="Suggested Resolution to Your Reported Issue",
+                        body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
+                        to_email=manual_email
+                    )
+                    if email_sent:
+                        st.success("📤 Suggested resolution emailed.")
