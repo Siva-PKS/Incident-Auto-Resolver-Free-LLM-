@@ -6,8 +6,19 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import openai
+from sentence_transformers import SentenceTransformer
 
-# --- Load tickets CSV ---
+# ---------------------
+# 🔐 SMTP CONFIGURATION
+# ---------------------
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_USER = "your_email@gmail.com"         # 👈 Replace with your email
+SMTP_PASSWORD = "your_app_password_here"   # 👈 Use App Password, not Gmail password
+
+# ---------------------
+# 📥 Load and embed tickets
+# ---------------------
 @st.cache_data(show_spinner=False)
 def load_tickets():
     df = pd.read_csv('tickets.csv').dropna()
@@ -15,9 +26,6 @@ def load_tickets():
     return df
 
 df = load_tickets()
-
-# --- SentenceTransformer embeddings ---
-from sentence_transformers import SentenceTransformer
 
 @st.cache_resource(show_spinner=False)
 def load_model_and_embeddings(df):
@@ -29,7 +37,9 @@ def load_model_and_embeddings(df):
 
 model, embeddings, df = load_model_and_embeddings(df)
 
-# --- Cosine similarity ---
+# ---------------------
+# 🔍 Similar ticket retrieval
+# ---------------------
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
@@ -39,27 +49,25 @@ def retrieve_similar(description, k=3):
     indices = sims.argsort()[-k:][::-1]
     return df.iloc[indices]
 
-# --- Exact match lookup ---
 def find_exact_match(description):
-    # Simple exact match on description (case-insensitive)
     desc_lower = description.lower()
     match_rows = df[df['description'].str.lower() == desc_lower]
-    if not match_rows.empty:
-        return match_rows.iloc[0]
-    return None
+    return match_rows.iloc[0] if not match_rows.empty else None
 
-# --- Send email function ---
-def send_email(subject, body, to_email, smtp_server, smtp_port, smtp_user, smtp_password):
+# ---------------------
+# 📧 Email sender
+# ---------------------
+def send_email(subject, body, to_email):
     msg = MIMEMultipart()
-    msg['From'] = smtp_user
+    msg['From'] = SMTP_USER
     msg['To'] = to_email
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'plain'))
 
     try:
-        server = smtplib.SMTP(smtp_server, smtp_port)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
-        server.login(smtp_user, smtp_password)
+        server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
         return True
@@ -67,7 +75,9 @@ def send_email(subject, body, to_email, smtp_server, smtp_port, smtp_user, smtp_
         st.error(f"Failed to send email: {e}")
         return False
 
-# --- LLM generation with OpenAI GPT ---
+# ---------------------
+# 🤖 GPT-4o-mini based resolution
+# ---------------------
 def generate_llm_response_openai(description, retrieved_df, openai_api_key):
     openai.api_key = openai_api_key
 
@@ -103,64 +113,47 @@ Based on this, provide a concise and helpful resolution for the user's issue."""
         st.error(f"OpenAI API error: {e}")
         return "Failed to generate a resolution."
 
-# --- Streamlit UI ---
+# ---------------------
+# 🌐 Streamlit UI
+# ---------------------
+st.title("🎫 Incident Auto-Resolver (with RAG + GPT-4o + Auto Email)")
 
-st.title("🎫 Incident Auto-Resolver with RAG + OpenAI")
-
-desc_input = st.text_area("Enter new incident description:")
-user_email = st.text_input("User Email")
-
-st.markdown("### SMTP Email Settings (for auto email sending)")
-smtp_server = st.text_input("SMTP Server", value="smtp.gmail.com")
-smtp_port = st.number_input("SMTP Port", min_value=1, max_value=65535, value=587)
-smtp_user = st.text_input("SMTP Username (email address)")
-smtp_password = st.text_input("SMTP Password", type="password")
-
-openai_api_key = st.text_input("OpenAI API Key", type="password")
+desc_input = st.text_area("📝 Enter new incident description:")
+user_email = st.text_input("📧 Customer Email")
+openai_api_key = st.text_input("🔑 OpenAI API Key", type="password")
 
 if st.button("Resolve Ticket"):
-    if not desc_input or not user_email or not openai_api_key or not smtp_user or not smtp_password:
-        st.warning("Please fill in all fields: description, user email, OpenAI API key, SMTP username, and SMTP password.")
+    if not desc_input or not user_email or not openai_api_key:
+        st.warning("Please fill in the incident description, email, and API key.")
     else:
-        # 1. Check for exact match
         match = find_exact_match(desc_input)
         if match is not None:
             st.success("✅ Exact match found!")
             st.write("**Resolution:**", match['resolution'])
 
-            # Send email with exact resolution
             email_sent = send_email(
                 subject=f"Issue Resolved: {match['description']}",
-                body=f"Here is the resolution:\n\n{match['resolution']}",
-                to_email=user_email,
-                smtp_server=smtp_server,
-                smtp_port=smtp_port,
-                smtp_user=smtp_user,
-                smtp_password=smtp_password,
+                body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
+                to_email=user_email
             )
             if email_sent:
-                st.info("📧 Auto-reply email sent to your email address.")
+                st.info("📩 Resolution email sent.")
         else:
-            st.warning("No exact match found. Retrieving similar tickets and generating suggestion via LLM...")
+            st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input)
             st.subheader("🧾 Similar Past Tickets")
-            st.write(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
+            st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
             suggestion = generate_llm_response_openai(desc_input, retrieved, openai_api_key)
             st.subheader("🤖 Suggested Resolution")
             st.write(suggestion)
 
-            if st.button("Send Suggested Reply via Email"):
+            if st.button("✉️ Send Suggested Resolution Email"):
                 email_sent = send_email(
                     subject="Suggested Resolution to Your Reported Issue",
-                    body=f"Issue: {desc_input}\n\nSuggested Resolution:\n{suggestion}",
-                    to_email=user_email,
-                    smtp_server=smtp_server,
-                    smtp_port=smtp_port,
-                    smtp_user=smtp_user,
-                    smtp_password=smtp_password,
+                    body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
+                    to_email=user_email
                 )
                 if email_sent:
-                    st.success("📤 Suggested resolution emailed to you.")
+                    st.success("📤 Suggested resolution emailed.")
 
-# Optionally, add download button for the generated resolution if desired
