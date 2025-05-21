@@ -148,17 +148,22 @@ def generate_llm_response(description, retrieved_df):
     )
 
     # Run LLM generation
-    output = llm_pipeline(llm_prompt, max_new_tokens=200)
-    generated_text = output[0]['generated_text'].replace('. ', '.\n')
+    def generate_llm_response(description, retrieved_df):
+    context = "\n\n".join([
+        f"Ticket ID: {row.ticket_id}\nSummary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
+        for _, row in retrieved_df.iterrows()
+    ])
 
-    # Format the prompt for display with bold headers
-    formatted_prompt = (
-        f"**User Issue:**\n{description}\n\n"
-        f"**Previous Ticket Context:**\n{context}\n\n"
-        f"**Suggest a resolution:**"
-    )
+    prompt = f"""User Issue:
+{description}
 
-    return formatted_prompt, generated_text
+Previous Ticket Context:
+{context}
+
+Suggest a resolution:"""
+
+    output = llm_pipeline(prompt, max_new_tokens=200)
+    return output[0]['generated_text']
 
 
 
