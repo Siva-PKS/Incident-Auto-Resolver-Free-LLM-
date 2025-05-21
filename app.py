@@ -14,7 +14,7 @@ from sentence_transformers import SentenceTransformer
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USER = "your_email@gmail.com"         # 👈 Replace with your email
-SMTP_PASSWORD = "your_app_password_here"   # 👈 Use App Password, not Gmail password
+SMTP_PASSWORD = "your_app_password_here"   # 👈 Use Gmail App Password
 
 # ---------------------
 # 📥 Load and embed tickets
@@ -76,7 +76,7 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# 🤖 GPT-4o-mini based resolution
+# 🤖 GPT-3.5 Turbo based resolution
 # ---------------------
 def generate_llm_response_openai(description, retrieved_df, openai_api_key):
     openai.api_key = openai_api_key
@@ -100,7 +100,7 @@ Based on this, provide a concise and helpful resolution for the user's issue."""
 
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful support assistant."},
                 {"role": "user", "content": prompt}
@@ -116,7 +116,7 @@ Based on this, provide a concise and helpful resolution for the user's issue."""
 # ---------------------
 # 🌐 Streamlit UI
 # ---------------------
-st.title("🎫 Incident Auto-Resolver (with RAG + GPT-4o + Auto Email)")
+st.title("🎫 Incident Auto-Resolver (RAG + GPT-3.5 + Auto Email)")
 
 desc_input = st.text_area("📝 Enter new incident description:")
 user_email = st.text_input("📧 Customer Email")
@@ -156,4 +156,3 @@ if st.button("Resolve Ticket"):
                 )
                 if email_sent:
                     st.success("📤 Suggested resolution emailed.")
-
