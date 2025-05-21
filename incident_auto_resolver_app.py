@@ -126,21 +126,23 @@ def load_llm_pipeline():
 llm_pipeline = load_llm_pipeline()
 
 def generate_llm_response(description, retrieved_df):
+    # Format the context with line breaks and bold labels
     context = "\n\n".join([
-        f"Ticket ID: {row.ticket_id}\nSummary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
+        f"**Ticket ID:** {row.ticket_id}\n**Summary:** {row.summary}\n**Description:** {row.description}\n**Resolution:** {row.resolution}"
         for _, row in retrieved_df.iterrows()
     ])
 
-    prompt = f"""User Issue:
-{description}
+    # Format the prompt with bold sections
+    formatted_prompt = f"""**User Issue:**\n{description}\n\n**Previous Ticket Context:**\n{context}\n\n**Suggest a resolution:**"""
 
-Previous Ticket Context:
-{context}
+    # Generate response
+    output = llm_pipeline(f"User Issue:\n{description}\n\nPrevious Ticket Context:\n{context}\n\nSuggest a resolution:", max_new_tokens=200)
+    
+    # Format the generated text to include line breaks
+    generated_text = output[0]['generated_text'].replace('. ', '.\n')
 
-Suggest a resolution:"""
+    return formatted_prompt, generated_text
 
-    output = llm_pipeline(prompt, max_new_tokens=200)
-    return output[0]['generated_text']
 
 # ---------------------
 # 🌐 Streamlit UI
