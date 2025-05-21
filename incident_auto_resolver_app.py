@@ -30,12 +30,12 @@ SMTP_USER = "spkincident@gmail.com"
 SMTP_PASSWORD = "jaao zsnq peke klgo"
 
 # ---------------------
-# 🙵 Logging configuration
+# 🔵 Logging configuration (commented out as per request)
 # ---------------------
-#logging.basicConfig(filename='email_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.basicConfig(filename='email_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ---------------------
-# 🗕 Load tickets
+# 🕕 Load tickets
 # ---------------------
 @st.cache_data(show_spinner=False)
 def load_closed_tickets():
@@ -110,14 +110,14 @@ def send_email(subject, body, to_email):
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
-        logging.info(f"Email successfully sent to {to_email} | Subject: {subject}")
+        # logging.info(f"Email successfully sent to {to_email} | Subject: {subject}")
         return True
     except Exception as e:
-        logging.error(f"Failed to send email to {to_email} | Subject: {subject} | Error: {e}")
+        # logging.error(f"Failed to send email to {to_email} | Subject: {subject} | Error: {e}")
         return False
 
 # ---------------------
-# 🧠 Local LLM + RAG resolution using Hugging Face model
+# 🧬 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -126,45 +126,39 @@ def load_llm_pipeline():
 llm_pipeline = load_llm_pipeline()
 
 def generate_llm_response(description, retrieved_df):
-    """
-    Generates a suggested resolution using a local LLM based on the given incident description
-    and retrieved similar past tickets. Also returns a formatted prompt for display.
-    """
-
-    # Create a formatted context from the retrieved tickets
+    # Create formatted context from retrieved tickets
     context = "\n\n".join([
-        f"**Ticket ID:** {row.ticket_id}\n"
-        f"**Summary:** {row.summary}\n"
-        f"**Description:** {row.description}\n"
-        f"**Resolution:** {row.resolution}"
+        f"🔹 **Ticket ID:** {row.ticket_id}\n"
+        f"   **Summary:** {row.summary}\n"
+        f"   **Description:** {row.description}\n"
+        f"   **Resolution:** {row.resolution}"
         for _, row in retrieved_df.iterrows()
     ])
 
-    # Build the prompt for LLM input (plain version for inference)
+    # Prompt for LLM
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
         f"Previous Ticket Context:\n{context}\n\n"
         f"Suggest a resolution:"
     )
 
-    # Run LLM generation
-    def generate_llm_response(description, retrieved_df):
-    context = "\n\n".join([
-        f"Ticket ID: {row.ticket_id}\nSummary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
-        for _, row in retrieved_df.iterrows()
-    ])
+    # Generate the response
+    output = llm_pipeline(llm_prompt, max_new_tokens=200)
+    generated_text = output[0]['generated_text'].strip()
 
-    prompt = f"""User Issue:
-{description}
+    # Optional: insert newlines after sentence endings for better readability
+    formatted_response = generated_text.replace('. ', '.\n')
 
-Previous Ticket Context:
-{context}
+    # Markdown-formatted prompt for display
+    formatted_prompt = (
+        f"### 🧾 User Issue\n"
+        f"{description}\n\n"
+        f"### 📂 Previous Ticket Context\n"
+        f"{context}\n\n"
+        f"### 💡 Suggested Resolution"
+    )
 
-Suggest a resolution:"""
-
-    output = llm_pipeline(prompt, max_new_tokens=200)
-    return output[0]['generated_text']
-
+    return formatted_prompt, formatted_response
 
 
 # ---------------------
@@ -211,14 +205,11 @@ if st.button("Resolve Ticket"):
             st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
-            suggestion = generate_llm_response(desc_input, retrieved)
+            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
             st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
 
-            # Store suggestion in session_state for later use in email sending
             st.session_state['suggestion'] = suggestion
-
-# --- Manual email sending of suggested resolution ---
 
 # --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
@@ -236,8 +227,6 @@ if 'suggestion' in st.session_state:
             )
             if email_sent:
                 st.success(f"📤 Suggested resolution emailed to `{manual_email}`.")
-                st.markdown("✅ Email dispatch logged. You can check `email_log.txt` for record.")
                 st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
             else:
                 st.error("❌ Failed to send the email. Please check the address or try again later.")
-
