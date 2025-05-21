@@ -103,8 +103,11 @@ def send_email(subject, body, to_email):
 # ---------------------
 # 🤖 GPT-3.5 Turbo + RAG resolution
 # ---------------------
+
+from openai import OpenAI
+
 def generate_llm_response_openai(description, retrieved_df, openai_api_key):
-    openai.api_key = openai_api_key
+    client = OpenAI(api_key=openai_api_key)
 
     context = '\n\n'.join([
         f"Ticket ID: {row.ticket_id}\nSummary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}\nAssigned Group: {row.assignedgroup}\nStatus: {row.status}\nDate: {row.date}"
@@ -124,7 +127,7 @@ Here are similar past tickets and their resolutions:
 Based on this, provide a concise and helpful resolution for the user's issue."""
 
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful support assistant."},
@@ -137,6 +140,7 @@ Based on this, provide a concise and helpful resolution for the user's issue."""
     except Exception as e:
         st.error(f"OpenAI API error: {e}")
         return "Failed to generate a resolution."
+
 
 # ---------------------
 # 🌐 Streamlit UI
