@@ -1,3 +1,13 @@
 ticket_id,summary,description,resolution,email
 1,VPN not connecting,User unable to connect to VPN,Restart VPN service,spkincident@gmail.com
 2,Outlook issue,Outlook not syncing emails,Clear cache and reconfigure,spkincident@gmail.com
+3,Printer not working,User unable to print to network printer,Check printer connection and reinstall drivers,spkincident@gmail.com
+4,Slow computer,Computer running very slow,Run disk cleanup and disable startup programs,spkincident@gmail.com
+5,Password reset,User forgot system password,Reset password via IT admin tools,spkincident@gmail.com
+6,Email login failed,Unable to login to corporate email,Reset password and verify account status,spkincident@gmail.com
+7,Zoom audio issue,No audio during Zoom calls,Check mic settings and reinstall Zoom,spkincident@gmail.com
+8,Shared folder access,Can't access shared network folder,Grant proper permissions in AD,spkincident@gmail.com
+9,Software installation blocked,Unable to install required software,Grant local admin rights temporarily,spkincident@gmail.com
+10,Wi-Fi connectivity issue,Laptop not connecting to office Wi-Fi,Forget network and reconnect,spkincident@gmail.com
+11,Browser crashes,Browser keeps crashing when opening,Clear browser cache and reinstall,spkincident@gmail.com
+12,Blue screen error,PC crashes with blue screen on startup,Check RAM and run system diagnostics,spkincident@gmail.com
