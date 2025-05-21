@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer
 # ---------------------
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USER = "xxxxxxx@gmail.com"         # 👈 Replace with your email
+SMTP_USER = "spkincident@gmail.com"         # 👈 Replace with your email
 SMTP_PASSWORD = "jaao zsnq peke klgo"   # 👈 Use Gmail App Password
 
 # ---------------------
