@@ -189,9 +189,9 @@ if st.button("Resolve Ticket"):
             suggestion = generate_llm_response(desc_input, retrieved)
             st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
+            # This should be inside your main Streamlit app flow, correctly indented with 4 spaces
 
-        
-     manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
+manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
 if st.button("✉️ Send Suggested Resolution Email"):
     manual_email = st.session_state.get("manual_email", "").strip()
@@ -204,6 +204,8 @@ if st.button("✉️ Send Suggested Resolution Email"):
             to_email=manual_email
         )
         if email_sent:
-            st.success(f"📤 Suggested resolution emailed to {manual_email}.")
+            st.success(f"📤 Suggested resolution emailed to `{manual_email}`.")
+            st.markdown("✅ Email dispatch logged. You can check `email_log.txt` for record.")
+            st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{suggestion}", language='text')
         else:
             st.error("❌ Failed to send the email. Please check the address or try again later.")
