@@ -1,6 +1,6 @@
 ticket_id,summary,description,resolution,assignedgroup,priority,status,date,email
-TICKET-10021,Outlook stuck syncing and won',Outlook stuck syncing and won't update inbox,,Email Team,Low,inprogress,2025-05-22,spkincident@gmail.com
-TICKET-10022,Wi-Fi randomly disconnects eve,Wi-Fi randomly disconnects every few minutes,,App Support,High,inprogress,2025-05-23,spkincident@gmail.com
+TICKET-10021,Outlook stuck syncing and won',Unable to send emails from Outlook,,Email Team,Low,inprogress,2025-05-22,spkincident@gmail.com
+TICKET-10022,Wi-Fi randomly disconnects eve,Wi-Fi keeps disconnecting intermittently,,Network Ops,High,inprogress,2025-05-23,spkincident@gmail.com
 TICKET-10023,User can't access shared folde,User can't access shared folder on network drive,,App Support,High,inprogress,2025-05-24,spkincident@gmail.com
 TICKET-10024,Application crashes while open,Application crashes while opening a document,,App Support,Low,inprogress,2025-05-25,spkincident@gmail.com
 TICKET-10025,Computer takes too long to boo,Computer takes too long to boot after restart,,Email Team,High,inprogress,2025-05-26,spkincident@gmail.com
