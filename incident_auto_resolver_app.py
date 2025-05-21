@@ -189,9 +189,13 @@ if st.button("Resolve Ticket"):
             suggestion = generate_llm_response(desc_input, retrieved)
             st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
-            # This should be inside your main Streamlit app flow, correctly indented with 4 spaces
 
-                if 'suggestion' in st.session_state:
+            # Store suggestion in session_state for later use in email sending
+            st.session_state['suggestion'] = suggestion
+
+# --- Manual email sending of suggested resolution ---
+
+if 'suggestion' in st.session_state:
     manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
     if st.button("✉️ Send Suggested Resolution Email"):
