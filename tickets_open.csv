@@ -1,11 +1,16 @@
-ticket_id,summary,description,resolution,assignedgroup,priority,status,date
-TICKET-10021,Outlook stuck syncing and won',Outlook stuck syncing and won't update inbox,,Email Team,Low,inprogress,2025-05-22
-TICKET-10022,Wi-Fi randomly disconnects eve,Wi-Fi randomly disconnects every few minutes,,App Support,High,inprogress,2025-05-23
-TICKET-10023,User can't access shared folde,User can't access shared folder on network drive,,App Support,High,inprogress,2025-05-24
-TICKET-10024,Application crashes while open,Application crashes while opening a document,,App Support,Low,inprogress,2025-05-25
-TICKET-10025,Computer takes too long to boo,Computer takes too long to boot after restart,,Email Team,High,inprogress,2025-05-26
-TICKET-10026,Chrome freezes when opening so,Chrome freezes when opening some sites,,IT Helpdesk,High,inprogress,2025-05-27
-TICKET-10027,User unable to connect to corp,User unable to connect to corporate VPN,,Email Team,Medium,inprogress,2025-05-28
-TICKET-10028,System restarts automatically ,System restarts automatically after blue screen,,Network Ops,High,inprogress,2025-05-29
-TICKET-10029,No sound in Teams meeting desp,No sound in Teams meeting despite working mic,,IT Helpdesk,Medium,inprogress,2025-05-30
-TICKET-10030,Can't send emails from desktop,Can't send emails from desktop Outlook,,Network Ops,Low,inprogress,2025-05-31
+ticket_id,summary,description,resolution,assignedgroup,priority,status,date,email
+TICKET-10021,Outlook stuck syncing and won',Outlook stuck syncing and won't update inbox,,Email Team,Low,inprogress,2025-05-22,spkincident@gmail.com
+TICKET-10022,Wi-Fi randomly disconnects eve,Wi-Fi randomly disconnects every few minutes,,App Support,High,inprogress,2025-05-23,spkincident@gmail.com
+TICKET-10023,User can't access shared folde,User can't access shared folder on network drive,,App Support,High,inprogress,2025-05-24,spkincident@gmail.com
+TICKET-10024,Application crashes while open,Application crashes while opening a document,,App Support,Low,inprogress,2025-05-25,spkincident@gmail.com
+TICKET-10025,Computer takes too long to boo,Computer takes too long to boot after restart,,Email Team,High,inprogress,2025-05-26,spkincident@gmail.com
+TICKET-10026,Chrome freezes when opening so,Chrome freezes when opening some sites,,IT Helpdesk,High,inprogress,2025-05-27,spkincident@gmail.com
+TICKET-10027,User unable to connect to corp,User unable to connect to corporate VPN,,Email Team,Medium,inprogress,2025-05-28,spkincident@gmail.com
+TICKET-10028,System restarts automatically ,System restarts automatically after blue screen,,Network Ops,High,inprogress,2025-05-29,spkincident@gmail.com
+TICKET-10029,No sound in Teams meeting desp,No sound in Teams meeting despite working mic,,IT Helpdesk,Medium,inprogress,2025-05-30,spkincident@gmail.com
+TICKET-10030,Can't send emails from desktop,Can't send emails from desktop Outlook,,Network Ops,Low,inprogress,2025-05-31,spkincident@gmail.com
+TICKET-10031,VPN connection timeout,VPN connection drops after 10 minutes,,Network Ops,Medium,inprogress,2025-06-01,spkincident@gmail.com
+TICKET-10032,Email attachments not downloading,Attachments fail to download in Outlook,,Email Team,High,inprogress,2025-06-02,spkincident@gmail.com
+TICKET-10033,Slow file upload to cloud,Uploading large files to cloud is slow,,Storage Team,Medium,inprogress,2025-06-03,spkincident@gmail.com
+TICKET-10034,Password reset link expired,Users report password reset links expired quickly,,App Support,Low,inprogress,2025-06-04,spkincident@gmail.com
+TICKET-10035,Monitor flickering intermittently,Office monitors flicker randomly,,IT Helpdesk,Low,inprogress,2025-06-05,spkincident@gmail.com
