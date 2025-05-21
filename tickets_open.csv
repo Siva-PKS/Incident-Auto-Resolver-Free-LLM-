@@ -1,0 +1,11 @@
+ticket_id,summary,description,resolution,assignedgroup,priority,status,date
+TICKET-10021,Outlook stuck syncing and won',Outlook stuck syncing and won't update inbox,,Email Team,Low,inprogress,2025-05-22
+TICKET-10022,Wi-Fi randomly disconnects eve,Wi-Fi randomly disconnects every few minutes,,App Support,High,inprogress,2025-05-23
+TICKET-10023,User can't access shared folde,User can't access shared folder on network drive,,App Support,High,inprogress,2025-05-24
+TICKET-10024,Application crashes while open,Application crashes while opening a document,,App Support,Low,inprogress,2025-05-25
+TICKET-10025,Computer takes too long to boo,Computer takes too long to boot after restart,,Email Team,High,inprogress,2025-05-26
+TICKET-10026,Chrome freezes when opening so,Chrome freezes when opening some sites,,IT Helpdesk,High,inprogress,2025-05-27
+TICKET-10027,User unable to connect to corp,User unable to connect to corporate VPN,,Email Team,Medium,inprogress,2025-05-28
+TICKET-10028,System restarts automatically ,System restarts automatically after blue screen,,Network Ops,High,inprogress,2025-05-29
+TICKET-10029,No sound in Teams meeting desp,No sound in Teams meeting despite working mic,,IT Helpdesk,Medium,inprogress,2025-05-30
+TICKET-10030,Can't send emails from desktop,Can't send emails from desktop Outlook,,Network Ops,Low,inprogress,2025-05-31
