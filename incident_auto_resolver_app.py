@@ -1,4 +1,3 @@
-
 # Fix for: "RuntimeError: no running event loop" on Python 3.10+
 import asyncio
 import sys
@@ -180,28 +179,26 @@ if st.button("Resolve Ticket"):
             st.subheader("🧾 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
-           # 🤖 Suggested Resolution display
-suggestion = generate_llm_response(desc_input, retrieved)
-st.subheader("🤖 Suggested Resolution")
-st.write(suggestion)
+            suggestion = generate_llm_response(desc_input, retrieved)
+            st.subheader("🤖 Suggested Resolution")
+            st.write(suggestion)
 
-# 📧 Manual Email Input
-if "manual_email" not in st.session_state:
-    st.session_state.manual_email = ""
+            if "manual_email" not in st.session_state:
+                st.session_state.manual_email = ""
 
-st.text_input("Enter email to send suggested resolution:", key="manual_email")
+            st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
-if st.button("✉️ Send Suggested Resolution Email"):
-    manual_email = st.session_state.manual_email
-    if not manual_email.strip():
-        st.warning("Please enter an email address to send the suggested resolution.")
-    else:
-        email_sent = send_email(
-            subject="Suggested Resolution to Your Reported Issue",
-            body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
-            to_email=manual_email
-        )
-        if email_sent:
-            st.success(f"📤 Suggested resolution emailed to {manual_email}.")
-        else:
-            st.error("❌ Failed to send the email. Please check the address or try again later.")
+            if st.button("✉️ Send Suggested Resolution Email"):
+                manual_email = st.session_state.manual_email
+                if not manual_email.strip():
+                    st.warning("Please enter an email address to send the suggested resolution.")
+                else:
+                    email_sent = send_email(
+                        subject="Suggested Resolution to Your Reported Issue",
+                        body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
+                        to_email=manual_email
+                    )
+                    if email_sent:
+                        st.success(f"📤 Suggested resolution emailed to {manual_email}.")
+                    else:
+                        st.error("❌ Failed to send the email. Please check the address or try again later.")
