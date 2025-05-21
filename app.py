@@ -1,9 +1,6 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
 from sentence_transformers import SentenceTransformer
 import datetime
 import requests
@@ -16,24 +13,27 @@ df = pd.read_csv('tickets.csv')
 df = df.dropna()
 df.columns = [col.lower().replace(" ", "_") for col in df.columns]
 
-# Embedding model & Nearest Neighbors index
+# Embedding model & embeddings
 @st.cache_resource
 def load_model_and_embeddings():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     temp_df = df.copy()
     temp_df['embedding'] = temp_df['description'].apply(lambda x: model.encode(x).tolist())
     embeddings = np.vstack(temp_df['embedding'].to_list()).astype('float32')
-    nn = NearestNeighbors(n_neighbors=3, metric='cosine')
-    nn.fit(embeddings)
-    return model, nn, embeddings, temp_df
+    return model, embeddings, temp_df
 
-model, nn_model, embeddings, df = load_model_and_embeddings()
+model, embeddings, df = load_model_and_embeddings()
 
-# Retrieve similar tickets
+# Cosine similarity function
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+# Retrieve similar tickets based on cosine similarity
 def retrieve_similar(description, k=3):
-    query_embedding = model.encode([description]).astype('float32')
-    distances, indices = nn_model.kneighbors(query_embedding, n_neighbors=k)
-    return df.iloc[indices[0]]
+    query_embedding = model.encode(description).astype('float32')
+    sims = np.array([cosine_similarity(query_embedding, emb) for emb in embeddings])
+    indices = sims.argsort()[-k:][::-1]  # top k highest similarities
+    return df.iloc[indices]
 
 # Free LLM via Hugging Face
 def generate_llm_response(description, retrieved_df, hf_token):
