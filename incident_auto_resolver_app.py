@@ -190,8 +190,7 @@ if st.button("Resolve Ticket"):
             st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
 
-           manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
-
+        
      manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
 if st.button("✉️ Send Suggested Resolution Email"):
