@@ -3,4 +3,4 @@ pandas
 numpy
 sentence-transformers
 transformers
-torch
+torch==2.0.1
