@@ -8,6 +8,9 @@ if sys.platform.startswith('linux') and sys.version_info >= (3, 10):
     except RuntimeError:
         asyncio.set_event_loop(asyncio.new_event_loop())
 
+import os
+os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
+
 
 
 import streamlit as st
