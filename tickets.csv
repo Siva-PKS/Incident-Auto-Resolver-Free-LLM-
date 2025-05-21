@@ -1,13 +1,21 @@
-ticket_id,summary,description,resolution,email
-1,VPN not connecting,User unable to connect to VPN,Restart VPN service,spkincident@gmail.com
-2,Outlook issue,Outlook not syncing emails,Clear cache and reconfigure,spkincident@gmail.com
-3,Printer not working,User unable to print to network printer,Check printer connection and reinstall drivers,spkincident@gmail.com
-4,Slow computer,Computer running very slow,Run disk cleanup and disable startup programs,spkincident@gmail.com
-5,Password reset,User forgot system password,Reset password via IT admin tools,spkincident@gmail.com
-6,Email login failed,Unable to login to corporate email,Reset password and verify account status,spkincident@gmail.com
-7,Zoom audio issue,No audio during Zoom calls,Check mic settings and reinstall Zoom,spkincident@gmail.com
-8,Shared folder access,Can't access shared network folder,Grant proper permissions in AD,spkincident@gmail.com
-9,Software installation blocked,Unable to install required software,Grant local admin rights temporarily,spkincident@gmail.com
-10,Wi-Fi connectivity issue,Laptop not connecting to office Wi-Fi,Forget network and reconnect,spkincident@gmail.com
-11,Browser crashes,Browser keeps crashing when opening,Clear browser cache and reinstall,spkincident@gmail.com
-12,Blue screen error,PC crashes with blue screen on startup,Check RAM and run system diagnostics,spkincident@gmail.com
+ticket_id,summary,description,resolution,assignedgroup,priority,status,date
+TICKET-10001,Email service down,Unable to send emails from Outlook,Restart mail server,BI-Testserver,High,closed,2025-04-10
+TICKET-10002,VPN not working,VPN disconnects frequently,Reset VPN profile,EM Tools,Low,closed,2025-04-11
+TICKET-10003,Printer offline,Printer is not showing up on the network,Reinstall printer drivers,PM CSS,High,closed,2025-04-12
+TICKET-10004,Slow internet,Internet speed is much slower than usual,Reset modem and router,Skynet,Medium,closed,2025-04-13
+TICKET-10005,Software crash,Application crashes when opening files,Reinstall software,PT BY,Low,pending,2025-04-14
+TICKET-10006,File access denied,Can't open shared files on the network drive,Check permissions and restart,HR CG,Low,resolved,2025-04-15
+TICKET-10007,Windows update stuck,Update is stuck at 99% on Windows 10,Force restart and update,BI_Analytics,High,assigned,2025-04-16
+TICKET-10008,Wi-Fi disconnecting,Wi-Fi keeps disconnecting intermittently,Reconfigure Wi-Fi settings,Business Service,Medium,closed,2025-04-17
+TICKET-10009,Email sync issue,Emails are not syncing with mobile device,Reconfigure email account,AS KA CG,Low,closed,2025-04-18
+TICKET-10010,External monitor not working,External monitor not displaying anything,Check cable connections and restart,PM CS,Low,resolved,2025-04-19
+TICKET-10011,Keyboard not working,User's keyboard is unresponsive,Try different USB port or replace keyboard,IT Support,Low,closed,2025-04-20
+TICKET-10012,Blue screen error,System crashes with blue screen intermittently,Update drivers and scan for malware,Infrastructure Team,High,closed,2025-04-21
+TICKET-10013,Application slow,CRM application is running slowly,Clear cache and restart application,Business Apps,Medium,closed,2025-04-22
+TICKET-10014,Account locked,User account locked due to multiple login attempts,Reset user password and unlock account,Service Desk,Low,resolved,2025-04-23
+TICKET-10015,Video conferencing issue,Microphone not working in Teams meeting,Check audio settings and device permissions,UC Team,Medium,closed,2025-04-24
+TICKET-10016,Drive full,User unable to save files due to full disk,Clear temp files or move data to cloud,Storage Team,Medium,closed,2025-04-25
+TICKET-10017,Missing desktop icons,All icons disappeared from desktop,Restart Windows Explorer process,End User Services,Low,closed,2025-04-26
+TICKET-10018,Shared drive access,User cannot access department shared folder,Verify permissions and re-map drive,Infrastructure Ops,Medium,closed,2025-04-27
+TICKET-10019,Slow boot time,Computer takes long to start up,Disable startup apps and defragment disk,IT Helpdesk,Low,closed,2025-04-28
+TICKET-10020,Browser crashing,Chrome crashes while browsing certain websites,Reset browser settings and disable extensions,Security Team,Low,closed,2025-04-29
