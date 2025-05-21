@@ -15,6 +15,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import smtplib
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from sentence_transformers import SentenceTransformer
@@ -29,7 +30,12 @@ SMTP_USER = "spkincident@gmail.com"
 SMTP_PASSWORD = "jaao zsnq peke klgo"
 
 # ---------------------
-# 📥 Load tickets
+# 🙵 Logging configuration
+# ---------------------
+logging.basicConfig(filename='email_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# ---------------------
+# 🗕 Load tickets
 # ---------------------
 @st.cache_data(show_spinner=False)
 def load_closed_tickets():
@@ -104,13 +110,14 @@ def send_email(subject, body, to_email):
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
+        logging.info(f"Email successfully sent to {to_email} | Subject: {subject}")
         return True
     except Exception as e:
-        st.error(f"Failed to send email: {e}")
+        logging.error(f"Failed to send email to {to_email} | Subject: {subject} | Error: {e}")
         return False
 
 # ---------------------
-# 🤖 Local LLM + RAG resolution using Hugging Face model
+# 🧠 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -138,7 +145,7 @@ Suggest a resolution:"""
 # ---------------------
 # 🌐 Streamlit UI
 # ---------------------
-st.title("🎫 Incident Auto-Resolver (RAG + Local LLM + Auto Email)")
+st.title("🎻 Incident Auto-Resolver (RAG + Local LLM + Auto Email)")
 
 desc_input = st.text_area("📝 Enter new incident description:")
 user_email = st.text_input("📧 Customer Email")
@@ -176,21 +183,18 @@ if st.button("Resolve Ticket"):
         else:
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input)
-            st.subheader("🧾 Similar Past Tickets")
+            st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
             suggestion = generate_llm_response(desc_input, retrieved)
-            st.subheader("🤖 Suggested Resolution")
+            st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
 
-            if "manual_email" not in st.session_state:
-                st.session_state.manual_email = ""
-
-            st.text_input("Enter email to send suggested resolution:", key="manual_email")
+            manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
             if st.button("✉️ Send Suggested Resolution Email"):
-                manual_email = st.session_state.manual_email
-                if not manual_email.strip():
+                manual_email = st.session_state.get("manual_email", "").strip()
+                if not manual_email:
                     st.warning("Please enter an email address to send the suggested resolution.")
                 else:
                     email_sent = send_email(
@@ -198,19 +202,17 @@ if st.button("Resolve Ticket"):
                         body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{suggestion}\n\nRegards,\nSupport Team",
                         to_email=manual_email
                     )
-                   if email_sent:
-                    st.success(f"📤 Suggested resolution emailed to `{manual_email}`.")
-                    st.markdown("✅ Email dispatch logged. You can check `email_log.txt` for record.")
-                    st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{suggestion}", language='text')
-                else:
-                    st.error("❌ Failed to send the email. Please check the address or try again later.")
+                    if email_sent:
+                        st.success(f"📤 Suggested resolution emailed to `{manual_email}`.")
+                        st.markdown("✅ Email dispatch logged. You can check `email_log.txt` for record.")
+                        st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{suggestion}", language='text')
+                    else:
+                        st.error("❌ Failed to send the email. Please check the address or try again later.")
 
-                with st.expander("📄 View Email Log"):
-                    try:
-                        with open("email_log.txt", "r") as f:
-                            log_content = f.read()
-                        st.text_area("Email Log", log_content, height=200)
-                    except FileNotFoundError:
-                        st.info("No email log found yet.")
-
-
+            with st.expander("📄 View Email Log"):
+                try:
+                    with open("email_log.txt", "r") as f:
+                        log_content = f.read()
+                    st.text_area("Email Log", log_content, height=200)
+                except FileNotFoundError:
+                    st.info("No email log found yet.")
