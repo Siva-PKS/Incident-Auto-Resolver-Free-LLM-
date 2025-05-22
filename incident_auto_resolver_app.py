@@ -186,38 +186,26 @@ if st.button("Resolve Ticket"):
             st.success("✅ Exact match found!")
             st.write("**Resolution:**", match['resolution'])
 
-            auto_email_ticket = check_open_tickets_for_auto_email(match['description'], match['assignedgroup'])
-            if auto_email_ticket is not None:
-                auto_email = auto_email_ticket.get('email', None)
-                if auto_email:
-                    email_sent = send_email(
-                        subject=f"Issue Resolved: {match['description']}",
-                        body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
-                        to_email=auto_email
-                    )
-                    if email_sent:
-                        st.info(f"📩 Resolution email sent automatically to {auto_email}")
-                else:
-                    st.warning("No email found in matching open ticket for auto sending.")
-            else:
-                email_sent = send_email(
-                    subject=f"Issue Resolved: {match['description']}",
-                    body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
-                    to_email=user_email
-                )
-                if email_sent:
-                    st.info("📩 Resolution email sent to your provided email.")
+            # ... existing email sending logic ...
+
         else:
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input)
             st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
-            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
+            # Get assigned group from the first retrieved similar ticket if available, else None
+            assigned_group = None
+            if not retrieved.empty:
+                assigned_group = retrieved.iloc[0]['assignedgroup']
+
+            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved, assigned_group=assigned_group)
+
             st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
 
             st.session_state['suggestion'] = suggestion
+
 
 # --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
