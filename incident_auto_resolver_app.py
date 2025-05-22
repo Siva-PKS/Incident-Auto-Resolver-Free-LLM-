@@ -170,20 +170,32 @@ if st.button("Resolve Ticket"):
                 st.error("❌ Failed to send resolution email.")
         else:
             st.warning("⚠️ No exact condition match found. Generating resolution via LLM...")
-            st.subheader("📜 Similar Past Tickets")
-            for i, row in retrieved.iterrows():
-                st.markdown(f"""
-                **Ticket ID:** {row.ticket_id}  
-                **Summary:** {row.summary}  
-                **Assigned Group:** {row.assignedgroup}  
-                **Status:** {row.status}  
-                **Date:** {row.date}  
-                **Description:**  
-                {row.description}  
-                **Resolution:**  
-                _{row.resolution}_  
-                ---
-                """)
+             st.subheader("📜 Similar Past Tickets")
+
+                # Truncate long text for better readability
+                def truncate(text, max_len=100):
+                    return text if len(text) <= max_len else text[:max_len] + "..."
+                
+                # Create a copy with truncated fields for display
+                display_df = retrieved.copy()
+                display_df['description'] = display_df['description'].apply(lambda x: truncate(x, 100))
+                display_df['resolution'] = display_df['resolution'].apply(lambda x: truncate(x, 100))
+                
+                # Reorder and rename columns for clarity
+                display_df = display_df[[
+                    'ticket_id', 'summary', 'assignedgroup', 'status', 'date', 'description', 'resolution'
+                ]].rename(columns={
+                    'ticket_id': 'Ticket ID',
+                    'summary': 'Summary',
+                    'assignedgroup': 'Group',
+                    'status': 'Status',
+                    'date': 'Date',
+                    'description': 'Description',
+                    'resolution': 'Resolution'
+                })
+                
+                st.dataframe(display_df, use_container_width=True)
+
 
             suggested_resolution = generate_llm_response(desc_input, retrieved)
             st.subheader("🤖 Suggested Resolution")
