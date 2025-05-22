@@ -125,48 +125,39 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df, assigned_group=None):
-    if assigned_group:
-        retrieved_df = retrieved_df[
-            (retrieved_df['assignedgroup'].str.lower() == assigned_group.lower()) &
-            (retrieved_df['status'].str.lower() == 'closed')
-        ]
-
-    if retrieved_df.empty:
-        return "### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group."
-
+def generate_llm_response(description, retrieved_df):
+    # Create formatted context from retrieved tickets
     context = "\n\n".join([
-        f"Ticket ID: {row.ticket_id}\n"
-        f"Summary: {row.summary}\n"
-        f"Description: {row.description}\n"
-        f"Resolution: {row.resolution}\n"
-        f"Assigned Group: {row.assignedgroup}\n"
-        f"Priority: {row.priority}\n"
-        f"Status: {row.status}\n"
-        f"Date: {row.date}"
-        for _, row in retrieved_df.iterrows()
-    ])
+    f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
+    for _, row in retrieved_df.iterrows()
+])
 
+
+
+    # Prompt for LLM
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Relevant Previous Tickets:\n{context}\n\n"
-        f"Based on these, suggest a concise and helpful resolution to the user's issue:"
+        f"Previous Ticket Context:\n{context}\n\n"
+        f"Suggest a resolution:"
     )
 
+    # Generate the response
     output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
+
+    # Optional: insert newlines after sentence endings for better readability
     formatted_response = generated_text.replace('. ', '.\n')
 
+    # Markdown-formatted prompt for display
     formatted_prompt = (
         f"### 🧾 User Issue\n"
         f"{description}\n\n"
-        f"### 📂 Relevant Past Tickets\n"
+        f"### 📂 Previous Ticket Context\n"
         f"{context}\n\n"
         f"### 💡 Suggested Resolution"
     )
 
     return formatted_prompt, formatted_response
-
 
 # ---------------------
 # 🌐 Streamlit UI
