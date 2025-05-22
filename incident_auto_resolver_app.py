@@ -126,7 +126,6 @@ def load_llm_pipeline():
 llm_pipeline = load_llm_pipeline()
 
 def generate_llm_response(description, retrieved_df, assigned_group=None):
-    # Filter retrieved_df by assigned_group (case-insensitive) and status 'closed' if assigned_group provided
     if assigned_group:
         retrieved_df = retrieved_df[
             (retrieved_df['assignedgroup'].str.lower() == assigned_group.lower()) &
@@ -136,36 +135,29 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     if retrieved_df.empty:
         return ("### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group.")
 
-    # Create formatted context from retrieved tickets
+    top_k = retrieved_df.head(1)
+
     context = "\n\n".join([
-        f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
-        for _, row in retrieved_df.iterrows()
+        f"Summary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
+        for _, row in top_k.iterrows()
     ])
 
-    # Prompt for LLM
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Previous Ticket Context:\n{context}\n\n"
-        f"Suggest a resolution:"
+        f"Based on the following similar past ticket(s):\n{context}\n\n"
+        f"Suggest a concise resolution:"
     )
 
-    # Generate the response
-    output = llm_pipeline(llm_prompt, max_new_tokens=200)
+    output = llm_pipeline(llm_prompt, max_new_tokens=100)
     generated_text = output[0]['generated_text'].strip()
+    final_response = generated_text.replace('. ', '.\n')
 
-    # Optional: insert newlines after sentence endings for better readability
-    formatted_response = generated_text.replace('. ', '.\n')
+    tickets_used = ", ".join([f"{row.ticket_id}" for _, row in top_k.iterrows()])
 
-    # Markdown-formatted prompt for display
-    formatted_prompt = (
-        f"### 🧾 User Issue\n"
-        f"{description}\n\n"
-        f"### 📂 Previous Ticket Context\n"
-        f"{context}\n\n"
-        f"### 💡 Suggested Resolution"
-    )
+    formatted_prompt = f"Resolution:\n{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
 
-    return formatted_prompt, formatted_response
+    return formatted_prompt, final_response
+
 
 
 
