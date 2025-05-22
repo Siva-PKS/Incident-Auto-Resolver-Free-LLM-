@@ -239,7 +239,7 @@ if 'suggestion' in st.session_state:
             email_sent = send_email(
                 ticket_info = retrieved.iloc[0]
                 ticket_id = ticket_info['ticket_id']
-                subject = f"Suggested Resolution to Your Reported Issue [Ticket ID: {ticket_id}]"
+                subject = f"Suggested Resolution to Your Reported Issue [Ticket ID: {ticket_id}]",
                 body=f"Hello,\n\nBased on your issue:\"{desc_input}\"\nHere is a suggested resolution:{st.session_state['suggestion']}\n\nRegards,\nSupport Team",
                 to_email=manual_email
             )
