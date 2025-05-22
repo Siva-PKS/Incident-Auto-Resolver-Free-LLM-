@@ -83,17 +83,17 @@ def check_open_tickets_for_auto_email(description, assigned_group, similarity_th
 
     # Step 1: Exact match
     matched = open_df[
-        (open_df['description'].str.lower().str.strip() == desc_lower) &
-        (open_df['assignedgroup'].str.lower().str.strip() == assigned_group_lower) &
-        (open_df['status'].str.lower().str.strip() == 'inprogress')
+        (open_df['description'].str.strip().str.lower() == desc_lower) &
+        (open_df['assignedgroup'].str.strip().str.lower() == assigned_group_lower) &
+        (open_df['status'].str.strip().str.lower() == 'inprogress')
     ]
     if not matched.empty:
         return matched.iloc[0]
 
     # Step 2: Similar match using embeddings
     filtered_df = open_df[
-        (open_df['assignedgroup'].str.lower().str.strip() == assigned_group_lower) &
-        (open_df['status'].str.lower().str.strip() == 'inprogress')
+        (open_df['assignedgroup'].str.strip().str.lower() == assigned_group_lower) &
+        (open_df['status'].str.strip().str.lower() == 'inprogress')
     ].copy()
 
     if filtered_df.empty:
@@ -108,7 +108,6 @@ def check_open_tickets_for_auto_email(description, assigned_group, similarity_th
     if top_match['similarity'] >= similarity_threshold:
         return top_match
     return None
-
 
 # ---------------------
 # 🌐 Streamlit UI
@@ -136,7 +135,7 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# �� Local LLM + RAG resolution using Hugging Face model
+# 🧠 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -176,6 +175,7 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     formatted_prompt = f"{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
 
     return formatted_prompt, final_response
+
 
 
 # ---------------------
