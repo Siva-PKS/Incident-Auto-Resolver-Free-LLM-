@@ -209,9 +209,8 @@ if st.button("Resolve Ticket"):
                     st.info("📩 Resolution email sent to your provided email.")
         else:
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
-            retrieved = retrieve_similar(desc_input)
-            st.subheader("📜 Similar Past Tickets")
-            retrieved['similarity'] = sims[indices]
+            retrieved = retrieve_similar(desc_input)  # similarity already included inside
+            st.subheader("📜 Similar Past Tickets")        
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'similarity', 'assignedgroup', 'status', 'date']])
 
             formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
