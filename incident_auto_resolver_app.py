@@ -226,10 +226,12 @@ if st.button("Resolve Ticket"):
                         })
                         st.subheader("🧾 Summary of Top Match + Suggested Resolution")
                         styled_table = suggestion_table.style.set_table_styles([
-                                {"selector": "th", "props": [("text-align", "left"), ("font-weight", "bold")]},
-                                {"selector": "td", "props": [("text-align", "left")]},
-                            ]).set_properties(subset=["Field"], **{'min-width': '200px', 'max-width': '300px'})
-                            
+                            {"selector": "th", "props": [("text-align", "left"), ("font-weight", "bold")]},
+                            {"selector": "td", "props": [("text-align", "left")]},
+                            ]).set_properties(subset=["Field"], **{'min-width': '100px', 'max-width': '300px'}).set_properties(
+                            subset=["Value"], **{'white-space': 'normal', 'word-wrap': 'break-word'}
+                            )
+                        
                         st.dataframe(styled_table, use_container_width=True)
 
                         st.session_state['suggestion'] = suggestion
