@@ -222,13 +222,18 @@ if st.button("Resolve Ticket"):
                     st.markdown(f"**Ticket ID:** {ticket_info['ticket_id']}")
                     st.markdown(f"**Description:** {ticket_info['description']}")
                     st.markdown(f"**Resolution:** {ticket_info['resolution']}")           
-                    st.session_state['suggestion'] = suggestion                  
+                    st.session_state['suggestion'] = suggestion
+                    st.session_state['ticket_info'] = {
+                        "ticket_id": top_ticket['ticket_id'],
+                        "description": top_ticket['description'],
+                        "resolution": top_ticket['resolution']
+                    }
             else:
                 st.warning("No similar tickets found.")
 
 
 # --- Manual email sending of suggested resolution ---
-if 'suggestion' in st.session_state:
+ if 'suggestion' in st.session_state and 'ticket_info' in st.session_state:
     manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
 
     if st.button("✉️ Send Suggested Resolution Email"):
@@ -236,21 +241,20 @@ if 'suggestion' in st.session_state:
         if not manual_email:
             st.warning("Please enter an email address to send the suggested resolution.")
         else:
-            # ✅ Move variable assignments OUTSIDE of send_email()
-            ticket_info = retrieved.iloc[0]
-            ticket_id = ticket_info['ticket_id']
-            subject = f"Suggested Resolution to Your Reported Issue [Ticket ID: {ticket_id}]"
-            
-            email_sent = send_email(
-                subject=subject,
-                body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{st.session_state['suggestion']}\n\nRegards,\nSupport Team",
-                to_email=manual_email
+            ticket_info = st.session_state['ticket_info']
+            subject = f"Suggested Resolution to Your Reported Issue [Ticket ID: {ticket_info['ticket_id']}]"
+            body = (
+                f"Hello,\n\n"
+                f"Based on your issue:\n\"{ticket_info['description']}\"\n\n"
+                f"Here is a suggested resolution:\n\n{st.session_state['suggestion']}\n\n"
+                f"Previous Resolution:\n{ticket_info['resolution']}\n\n"
+                f"Regards,\nSupport Team"
             )
+
+            email_sent = send_email(subject=subject, body=body, to_email=manual_email)
 
             if email_sent:
                 st.success(f"📤 Suggested resolution emailed to `{manual_email}`.")
                 st.code(f"Subject: {subject}\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
-                manual_email = ""
             else:
                 st.error("❌ Failed to send the email. Please check the address or try again later.")
-
