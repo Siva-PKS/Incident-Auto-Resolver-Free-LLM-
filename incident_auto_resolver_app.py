@@ -243,7 +243,8 @@ st.header("🧠 Auto-Resolve Open Tickets (RAG + LLM)")
 
 if st.button("Run Auto-Resolution for All Open Tickets"):
     results = []
-    for _, row in open_df.iterrows():
+    inprogress_tickets = open_df[open_df['status'].str.lower() == 'inprogress']
+    for _, row in inprogress_tickets.iterrows():
         description = row['description']
         assigned_group = row['assignedgroup']
         email = row['email']
