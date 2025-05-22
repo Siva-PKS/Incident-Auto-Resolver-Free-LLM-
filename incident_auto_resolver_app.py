@@ -148,8 +148,7 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     formatted_prompt = (
         f"### 🧾 User Issue\n"
         f"{description}\n\n"
-        f"### 📂 Relevant Past Tickets\n"
-        f"{context}\n\n"
+        f"### 📂 Relevant Past Tickets\n"       
         f"### 💡 Suggested Resolution"
     )
 
