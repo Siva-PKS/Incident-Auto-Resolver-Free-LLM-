@@ -129,16 +129,18 @@ llm_pipeline = load_llm_pipeline()
 def generate_llm_response(description, _):
     global open_df, closed_df, model
 
-    # Normalize all required columns
+    # Normalize both DataFrames (case-insensitive comparisons)
     open_df['assignedgroup'] = open_df['assignedgroup'].str.lower().str.strip()
+    open_df['status'] = open_df['status'].str.lower().str.strip()
+    
     closed_df['assignedgroup'] = closed_df['assignedgroup'].str.lower().str.strip()
     closed_df['status'] = closed_df['status'].str.lower().str.strip()
     closed_df['description'] = closed_df['description'].astype(str)
 
-    # Get valid assigned groups from open_df with status 'closed'
+    # Get all assigned groups from open tickets with status closed
     valid_groups = open_df[open_df['status'] == 'closed']['assignedgroup'].unique()
 
-    # Filter directly from closed_df instead of a limited retrieved_df
+    # Filter closed_df by assignedgroup and status
     filtered_df = closed_df[
         (closed_df['status'] == 'closed') &
         (closed_df['assignedgroup'].isin(valid_groups))
@@ -147,7 +149,7 @@ def generate_llm_response(description, _):
     if filtered_df.empty:
         return "### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets with valid assigned groups."
 
-    # Compute semantic similarity
+    # Semantic similarity calculation
     query_embedding = model.encode(description).astype('float32')
     filtered_df['embedding'] = filtered_df['description'].apply(lambda x: model.encode(x).astype('float32'))
 
@@ -156,10 +158,10 @@ def generate_llm_response(description, _):
 
     filtered_df['similarity'] = filtered_df['embedding'].apply(lambda emb: cosine_sim(query_embedding, emb))
 
-    # Take top 3 most similar entries
+    # Pick top 3 similar tickets
     top_k = filtered_df.sort_values(by='similarity', ascending=False).head(3)
 
-    # Build prompt context
+    # Prompt context
     context = "\n\n".join([
         f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}; Assigned Group: {row.assignedgroup}; Status: {row.status}"
         for _, row in top_k.iterrows()
@@ -184,6 +186,7 @@ def generate_llm_response(description, _):
     )
 
     return formatted_prompt, formatted_response
+
 
 
 
