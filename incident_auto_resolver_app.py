@@ -125,7 +125,7 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df, assigned_group=None):
+def generate_llm_response(description, retrieved_df, assigned_group):
     # Filter retrieved_df by assigned_group (case-insensitive) and status 'closed' if assigned_group provided
     if assigned_group:
         retrieved_df = retrieved_df[
@@ -199,7 +199,7 @@ if st.button("Resolve Ticket"):
             if not retrieved.empty:
                 assigned_group = retrieved.iloc[0]['assignedgroup']
 
-            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved, assigned_group=assigned_group)
+            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved, assigned_group)
 
             st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
