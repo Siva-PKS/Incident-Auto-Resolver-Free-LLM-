@@ -80,6 +80,8 @@ def find_exact_match(description):
 def check_open_tickets_for_auto_email(description, assigned_group):
     desc_lower = description.lower()
     assigned_group_lower = assigned_group.lower()
+
+    # Step 1: Exact match
     matched = open_df[
         (open_df['description'].str.lower() == desc_lower) &
         (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
@@ -88,21 +90,26 @@ def check_open_tickets_for_auto_email(description, assigned_group):
     if not matched.empty:
         return matched.iloc[0]
 
-    # Try similarity match with LLM+RAG
-    query_emb = model.encode(description).astype('float32')
-    open_df['embedding'] = open_df['description'].apply(lambda x: model.encode(x).tolist())
-    open_df['similarity'] = open_df['embedding'].apply(lambda x: cosine_similarity(query_emb, np.array(x)))
-
+    # Step 2: Similar match using LLM+RAG
     filtered_df = open_df[
         (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
         (open_df['status'].str.lower() == 'inprogress')
-    ]
+    ].copy()
 
-    if not filtered_df.empty:
-        top_match = filtered_df.sort_values(by='similarity', ascending=False).iloc[0]
-        return top_match
+    if filtered_df.empty:
+        return None
 
-    return None
+    query_emb = model.encode(description).astype('float32')
+    filtered_df['embedding'] = filtered_df['description'].apply(lambda x: model.encode(x).tolist())
+    filtered_df['similarity'] = filtered_df['embedding'].apply(lambda x: cosine_similarity(query_emb, np.array(x)))
+
+    top_match = filtered_df.sort_values(by='similarity', ascending=False).iloc[0]
+    return top_match
+
+# ---------------------
+# 🌐 Streamlit UI
+# ---------------------
+# [UI logic remains unchanged from previous version]
 
 # ---------------------
 # 📧 Email sender
@@ -125,7 +132,7 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# 🩠 Local LLM + RAG resolution using Hugging Face model
+# �� Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
