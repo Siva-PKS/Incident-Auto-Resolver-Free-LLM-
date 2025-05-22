@@ -137,12 +137,22 @@ llm_pipeline = load_llm_pipeline()
 def generate_llm_response(description, retrieved_df):
     if retrieved_df.empty:
         context = "No relevant past tickets found."
+        ticket_info = None
     else:
-        # Safely iterate over rows (works for one or many)
-        context = "\n\n".join([
-            f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
-            for _, row in retrieved_df.iterrows()
-        ])
+        # Extract info from the top (or only) ticket
+        row = retrieved_df.iloc[0]
+        ticket_info = {
+            "ticket_id": row.ticket_id,
+            "description": row.description,
+            "resolution": row.resolution
+        }
+        
+        # Prepare context text for LLM prompt
+        context = (
+            f"Ticket ID: {ticket_info['ticket_id']}; "
+            f"Description: {ticket_info['description']}; "
+            f"Resolution: {ticket_info['resolution']}"
+        )
 
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
@@ -152,19 +162,9 @@ def generate_llm_response(description, retrieved_df):
 
     output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
-
-    # Optional formatting
     formatted_response = generated_text.replace('. ', '.\n')
 
-    formatted_prompt = (
-        f"### 🧾 User Issue\n"
-        f"{description}\n\n"
-        f"### 📂 Previous Ticket Context\n"
-        f"{context}\n\n"
-        f"### 💡 Suggested Resolution"
-    )
-
-    return formatted_prompt, formatted_response
+    return ticket_info, formatted_response
 
 
 
@@ -209,15 +209,20 @@ if st.button("Resolve Ticket"):
         else:
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input, k=3)
-            
             st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'similarity', 'assignedgroup', 'status', 'date']])
             
             if not retrieved.empty:
-                top_ticket = retrieved.iloc[[0]]  # single-row dataframe
-                formatted_prompt, suggestion = generate_llm_response(desc_input, top_ticket)
-                
+                top_ticket = retrieved.iloc[[0]]
+                ticket_info, suggestion = generate_llm_response(desc_input, top_ticket)
+            
                 st.subheader("🤔 Suggested Resolution")
+            
+                if ticket_info:
+                    st.markdown(f"**Ticket ID:** {ticket_info['ticket_id']}")
+                    st.markdown(f"**Description:** {ticket_info['description']}")
+                    st.markdown(f"**Resolution:** {ticket_info['resolution']}")
+            
                 st.write(suggestion)
             else:
                 st.warning("No similar tickets found.")
