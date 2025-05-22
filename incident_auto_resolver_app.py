@@ -83,7 +83,7 @@ def check_open_tickets_for_auto_email(description, assigned_group):
     filtered = open_df[
         (open_df['description'].str.lower() == desc_lower) &
         (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
-        (open_df['status'].str.lower() == 'closed')
+        (open_df['status'].str.lower() == 'inprogress')
     ]
     if not filtered.empty:
         return filtered.iloc[0]
