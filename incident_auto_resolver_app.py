@@ -125,12 +125,11 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df, assigned_group=None):
+def generate_llm_response(description, retrieved_df, assigned_group):
     desc_lower = description.lower()
 
     # Filter tickets from closed_df (should already be closed tickets)
-    filtered_df = retrieved_df[
-        (retrieved_df['description'].str.lower() == desc_lower) &
+    filtered_df = retrieved_df[       
         (retrieved_df['status'].str.lower() == 'closed')
     ]
 
