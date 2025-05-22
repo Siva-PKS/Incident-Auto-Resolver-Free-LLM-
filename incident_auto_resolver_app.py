@@ -207,41 +207,16 @@ if st.button("Resolve Ticket"):
                 if email_sent:
                     st.info("📩 Resolution email sent to your provided email.")
         else:               
-                    st.warning("No exact match. Retrieving similar tickets and generating resolution...")
-                    retrieved = retrieve_similar(desc_input)
-                    st.subheader("📜 Similar Past Tickets")
-                    st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'priority', 'status', 'date']])
-                
-                    formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
-                
-                    # Get the top matching ticket for summary table
-                    top_ticket = retrieved.iloc[0] if not retrieved.empty else None
-                    if top_ticket is not None:
-                           suggestion_only_df = pd.DataFrame({
-                            "Suggested Resolution": [suggestion]
-                        })
-                    
-                        st.subheader("💡 Suggested Resolution")
-                        styled_table = suggestion_only_df.style.set_table_styles([
-                            {"selector": "th", "props": [
-                                ("text-align", "left"),
-                                ("font-weight", "bold"),
-                                ("white-space", "normal"),
-                                ("word-wrap", "break-word"),
-                                ("max-width", "600px"),
-                            ]},
-                            {"selector": "td", "props": [
-                                ("text-align", "left"),
-                                ("white-space", "normal"),
-                                ("word-wrap", "break-word"),
-                                ("max-width", "600px"),
-                            ]},
-                        ]).set_properties(**{
-                            'min-width': '400px',
-                            'max-width': '600px',
-                        })
-                    
-                        st.dataframe(styled_table, use_container_width=True)
+            st.warning("No exact match. Retrieving similar tickets and generating resolution...")
+            retrieved = retrieve_similar(desc_input)
+            st.subheader("📜 Similar Past Tickets")
+            st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
+
+            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
+            st.subheader("🤔 Suggested Resolution")
+            st.write(suggestion)
+
+            st.session_state['suggestion'] = suggestion
 
 
 # --- Manual email sending of suggested resolution ---
