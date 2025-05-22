@@ -134,10 +134,22 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
 
     if retrieved_df.empty:
         return "### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group."
- 
+
+    context = "\n\n".join([
+        f"Ticket ID: {row.ticket_id}\n"
+        f"Summary: {row.summary}\n"
+        f"Description: {row.description}\n"
+        f"Resolution: {row.resolution}\n"
+        f"Assigned Group: {row.assignedgroup}\n"
+        f"Priority: {row.priority}\n"
+        f"Status: {row.status}\n"
+        f"Date: {row.date}"
+        for _, row in retrieved_df.iterrows()
+    ])
 
     llm_prompt = (
-        f"User Issue:\n{description}\n\n"     
+        f"User Issue:\n{description}\n\n"
+        f"Relevant Previous Tickets:\n{context}\n\n"
         f"Based on these, suggest a concise and helpful resolution to the user's issue:"
     )
 
@@ -147,8 +159,7 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
 
     formatted_prompt = (
         f"### 🧾 User Issue\n"
-        f"{description}\n\n"
-        f"### 📂 Relevant Past Tickets\n"       
+        f"{description}\n\n"           
         f"### 💡 Suggested Resolution"
     )
 
