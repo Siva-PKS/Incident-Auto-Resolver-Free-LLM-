@@ -245,7 +245,7 @@ if st.button("Resolve Ticket"):
             st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
-            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved, assignedgroup)
+            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved, assignedgroup=NONE)
             st.subheader("🤔 Suggested Resolution")
             st.write("**Resolution:**", suggestion)
 
