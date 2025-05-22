@@ -125,34 +125,58 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df):
-    # Create formatted context from retrieved tickets
+    def generate_llm_response(description, retrieved_df):
+    global open_df, closed_df, model  # Ensure access to the model and datasets
+
+    # Normalize for comparison
+    open_df['assignedgroup'] = open_df['assignedgroup'].str.lower().str.strip()
+    closed_df['assignedgroup'] = closed_df['assignedgroup'].str.lower().str.strip()
+    retrieved_df['assignedgroup'] = retrieved_df['assignedgroup'].str.lower().str.strip()
+
+    # Get assigned groups from open_df with status 'closed'
+    valid_groups = open_df[open_df['status'].str.lower() == 'closed']['assignedgroup'].unique()
+
+    # Filter retrieved_df by valid assigned group and status 'closed'
+    filtered_df = retrieved_df[
+        (retrieved_df['status'].str.lower() == 'closed') &
+        (retrieved_df['assignedgroup'].isin(valid_groups))
+    ].copy()
+
+    if filtered_df.empty:
+        return "### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets with valid assigned groups."
+
+    # Compute semantic similarity
+    query_embedding = model.encode(description).astype('float32')
+    filtered_df['embedding'] = filtered_df['description'].apply(lambda x: model.encode(x).astype('float32'))
+
+    def cosine_sim(a, b):
+        return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+    filtered_df['similarity'] = filtered_df['embedding'].apply(lambda emb: cosine_sim(query_embedding, emb))
+
+    # Take top 3 most similar entries
+    top_k = filtered_df.sort_values(by='similarity', ascending=False).head(3)
+
+    # Prepare prompt context
     context = "\n\n".join([
-    f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
-    for _, row in retrieved_df.iterrows()
-])
+        f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}; Assigned Group: {row.assignedgroup}; Status: {row.status}"
+        for _, row in top_k.iterrows()
+    ])
 
-
-
-    # Prompt for LLM
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Previous Ticket Context:\n{context}\n\n"
-        f"Suggest a resolution:"
+        f"Relevant Previous Tickets:\n{context}\n\n"
+        f"Suggest a concise, helpful resolution based on these:"
     )
 
-    # Generate the response
     output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
-
-    # Optional: insert newlines after sentence endings for better readability
     formatted_response = generated_text.replace('. ', '.\n')
 
-    # Markdown-formatted prompt for display
     formatted_prompt = (
         f"### 🧾 User Issue\n"
         f"{description}\n\n"
-        f"### 📂 Previous Ticket Context\n"
+        f"### 📂 Most Relevant Past Tickets\n"
         f"{context}\n\n"
         f"### 💡 Suggested Resolution"
     )
