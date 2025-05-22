@@ -133,12 +133,10 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
         ]
 
     if retrieved_df.empty:
-        return "### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group."
+        return "Unable to find similar closed tickets for this assigned group."
 
-    # Take top 1 similar ticket (adjust if you want more)
     top_k = retrieved_df.head(1)
 
-    # Prepare prompt with summary/description/resolution of similar ticket(s)
     context = "\n\n".join([
         f"Summary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
         for _, row in top_k.iterrows()
@@ -154,13 +152,12 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     generated_text = output[0]['generated_text'].strip()
     final_response = generated_text.replace('. ', '.\n')
 
-    # Collect Ticket ID(s) of similar tickets
     tickets_used = ", ".join([f"{row.ticket_id}" for _, row in top_k.iterrows()])
 
-    # Format output with headers
     formatted_output = f"Resolution:\n{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
 
-    return formatted_output, None
+    return formatted_output
+
 
 # ---------------------
 # 🌐 Streamlit UI
