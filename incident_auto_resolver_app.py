@@ -27,7 +27,7 @@ from transformers import pipeline
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USER = "spkincident@gmail.com"
-SMTP_PASSWORD = "jaao zsnq peke klgo"
+SMTP_PASSWORD = st.secrets["email_password"]
 
 # ---------------------
 # 🔵 Logging configuration (commented out as per request)
@@ -202,7 +202,8 @@ if st.button("Resolve Ticket"):
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input)
             st.subheader("📜 Similar Past Tickets")
-            st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
+            retrieved['similarity'] = sims[indices]
+            st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'similarity', 'assignedgroup', 'status', 'date']])
 
             formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
             st.subheader("🤔 Suggested Resolution")
