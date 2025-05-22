@@ -222,13 +222,7 @@ if st.button("Resolve Ticket"):
                     st.markdown(f"**Ticket ID:** {ticket_info['ticket_id']}")
                     st.markdown(f"**Description:** {ticket_info['description']}")
                     st.markdown(f"**Resolution:** {ticket_info['resolution']}")           
-                    st.session_state['suggestion'] = suggestion
-                    
-                    st.session_state['ticket_info'] = {
-                        "ticket_id": top_ticket['ticket_id'],
-                        "description": top_ticket['description'],
-                        "resolution": top_ticket['resolution']
-                    }                
+                    st.session_state['suggestion'] = suggestion                  
             else:
                 st.warning("No similar tickets found.")
 
@@ -243,6 +237,8 @@ if 'suggestion' in st.session_state:
             st.warning("Please enter an email address to send the suggested resolution.")
         else:
             email_sent = send_email(
+                ticket_info = retrieved.iloc[0]
+                ticket_id = ticket_info['ticket_id']
                 subject = f"Suggested Resolution to Your Reported Issue [Ticket ID: {ticket_id}]"
                 body=f"Hello,\n\nBased on your issue:\"{desc_input}\"\nHere is a suggested resolution:{st.session_state['suggestion']}\n\nRegards,\nSupport Team",
                 to_email=manual_email
