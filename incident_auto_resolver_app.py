@@ -237,7 +237,7 @@ if 'suggestion' in st.session_state:
             st.warning("Please enter an email address to send the suggested resolution.")
         else:
             email_sent = send_email(
-                subject = f"Suggested Resolution to Your Reported Issue open_df['ticket_id']"
+                subject="Suggested Resolution to Your Reported Issue",
                 body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{st.session_state['suggestion']}\n\nRegards,\nSupport Team",
                 to_email=manual_email
             )
