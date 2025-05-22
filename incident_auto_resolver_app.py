@@ -80,13 +80,23 @@ def find_exact_match(description):
 def check_open_tickets_for_auto_email(description, assigned_group):
     desc_lower = description.lower()
     assigned_group_lower = assigned_group.lower()
-    filtered = open_df[
+    matched = open_df[
         (open_df['description'].str.lower() == desc_lower) &
         (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
         (open_df['status'].str.lower() == 'inprogress')
     ]
-    if not filtered.empty:
-        return filtered.iloc[0]
+    if not matched.empty:
+        return matched.iloc[0]
+    # Try fuzzy match with LLM + RAG fallback
+    retrieved = retrieve_similar(description, k=1)
+    if not retrieved.empty:
+        matched_group = retrieved.iloc[0]['assignedgroup']
+        group_match = open_df[
+            (open_df['assignedgroup'].str.lower() == matched_group.lower()) &
+            (open_df['status'].str.lower() == 'inprogress')
+        ]
+        if not group_match.empty:
+            return group_match.iloc[0]
     return None
 
 # ---------------------
@@ -110,7 +120,7 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# 🦠 Local LLM + RAG resolution using Hugging Face model
+# 🩠 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -150,6 +160,7 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     formatted_prompt = f"{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
 
     return formatted_prompt, final_response
+
 
 # ---------------------
 # 🌐 Streamlit UI
