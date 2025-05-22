@@ -125,7 +125,7 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-    def generate_llm_response(description, retrieved_df):
+def generate_llm_response(description, retrieved_df):
     global open_df, closed_df, model  # Ensure access to the model and datasets
 
     # Normalize for comparison
@@ -182,6 +182,7 @@ llm_pipeline = load_llm_pipeline()
     )
 
     return formatted_prompt, formatted_response
+
 
 # ---------------------
 # 🌐 Streamlit UI
