@@ -89,17 +89,40 @@ def load_llm_pipeline():
 llm_pipeline = load_llm_pipeline()
 
 def generate_llm_response(description, retrieved_df):
+    # Deduplicate based on description + resolution
+    unique_cases = retrieved_df.drop_duplicates(subset=['description', 'resolution'])
+
+    # Create formatted context from unique retrieved tickets
     context = "\n\n".join([
         f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
-        for _, row in retrieved_df.iterrows()
+        for _, row in unique_cases.iterrows()
     ])
-    prompt = (
+
+    # Prompt for LLM
+    llm_prompt = (
         f"User Issue:\n{description}\n\n"
         f"Previous Ticket Context:\n{context}\n\n"
         f"Suggest a resolution:"
     )
-    output = llm_pipeline(prompt, max_new_tokens=200)
-    return output[0]['generated_text'].strip()
+
+    # Generate the response
+    output = llm_pipeline(llm_prompt, max_new_tokens=200)
+    generated_text = output[0]['generated_text'].strip()
+
+    # Optional: insert newlines after sentence endings for better readability
+    formatted_response = generated_text.replace('. ', '.\n')
+
+    # Markdown-formatted prompt for display
+    formatted_prompt = (
+        f"### 🧾 User Issue\n"
+        f"{description}\n\n"
+        f"### 📂 Previous Ticket Context\n"
+        f"{context}\n\n"
+        f"### 💡 Suggested Resolution"
+    )
+
+    return formatted_prompt, formatted_response
+
 
 # Streamlit UI
 st.title("🛠️ Incident Auto-Resolver (RAG + LLM + Email)")
