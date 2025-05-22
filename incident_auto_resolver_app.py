@@ -77,23 +77,23 @@ def find_exact_match(description):
     match_rows = closed_df[closed_df['description'].str.lower() == desc_lower]
     return match_rows.iloc[0] if not match_rows.empty else None
 
-def check_open_tickets_for_auto_email(description, assigned_group):
-    desc_lower = description.lower()
-    assigned_group_lower = assigned_group.lower()
+def check_open_tickets_for_auto_email(description, assigned_group, similarity_threshold=0.85):
+    desc_lower = description.strip().lower()
+    assigned_group_lower = assigned_group.strip().lower()
 
     # Step 1: Exact match
     matched = open_df[
-        (open_df['description'].str.lower() == desc_lower) &
-        (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
-        (open_df['status'].str.lower() == 'inprogress')
+        (open_df['description'].str.lower().str.strip() == desc_lower) &
+        (open_df['assignedgroup'].str.lower().str.strip() == assigned_group_lower) &
+        (open_df['status'].str.lower().str.strip() == 'inprogress')
     ]
     if not matched.empty:
         return matched.iloc[0]
 
-    # Step 2: Similar match using LLM+RAG
+    # Step 2: Similar match using embeddings
     filtered_df = open_df[
-        (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
-        (open_df['status'].str.lower() == 'inprogress')
+        (open_df['assignedgroup'].str.lower().str.strip() == assigned_group_lower) &
+        (open_df['status'].str.lower().str.strip() == 'inprogress')
     ].copy()
 
     if filtered_df.empty:
@@ -104,7 +104,11 @@ def check_open_tickets_for_auto_email(description, assigned_group):
     filtered_df['similarity'] = filtered_df['embedding'].apply(lambda x: cosine_similarity(query_emb, np.array(x)))
 
     top_match = filtered_df.sort_values(by='similarity', ascending=False).iloc[0]
-    return top_match
+
+    if top_match['similarity'] >= similarity_threshold:
+        return top_match
+    return None
+
 
 # ---------------------
 # 🌐 Streamlit UI
