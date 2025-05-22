@@ -87,16 +87,21 @@ def check_open_tickets_for_auto_email(description, assigned_group):
     ]
     if not matched.empty:
         return matched.iloc[0]
-    # Try fuzzy match with LLM + RAG fallback
-    retrieved = retrieve_similar(description, k=1)
-    if not retrieved.empty:
-        matched_group = retrieved.iloc[0]['assignedgroup']
-        group_match = open_df[
-            (open_df['assignedgroup'].str.lower() == matched_group.lower()) &
-            (open_df['status'].str.lower() == 'inprogress')
-        ]
-        if not group_match.empty:
-            return group_match.iloc[0]
+
+    # Try similarity match with LLM+RAG
+    query_emb = model.encode(description).astype('float32')
+    open_df['embedding'] = open_df['description'].apply(lambda x: model.encode(x).tolist())
+    open_df['similarity'] = open_df['embedding'].apply(lambda x: cosine_similarity(query_emb, np.array(x)))
+
+    filtered_df = open_df[
+        (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
+        (open_df['status'].str.lower() == 'inprogress')
+    ]
+
+    if not filtered_df.empty:
+        top_match = filtered_df.sort_values(by='similarity', ascending=False).iloc[0]
+        return top_match
+
     return None
 
 # ---------------------
