@@ -125,69 +125,39 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-
-def generate_llm_response(description, _):
-    global open_df, closed_df, model
-
-    # Normalize both DataFrames (case-insensitive comparisons)
-    open_df['assignedgroup'] = open_df['assignedgroup'].str.lower().str.strip()
-    open_df['status'] = open_df['status'].str.lower().str.strip()
-    
-    closed_df['assignedgroup'] = closed_df['assignedgroup'].str.lower().str.strip()
-    closed_df['status'] = closed_df['status'].str.lower().str.strip()
-    closed_df['description'] = closed_df['description'].astype(str)
-
-    # Get all assigned groups from open tickets with status closed
-    valid_groups = open_df[open_df['status'] == 'closed']['assignedgroup'].unique()
-
-    # Filter closed_df by assignedgroup and status
-    filtered_df = closed_df[
-        (closed_df['status'] == 'closed') &
-        (closed_df['assignedgroup'].isin(valid_groups))
-    ].copy()
-
-    if filtered_df.empty:
-        return "### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets with valid assigned groups."
-
-    # Semantic similarity calculation
-    query_embedding = model.encode(description).astype('float32')
-    filtered_df['embedding'] = filtered_df['description'].apply(lambda x: model.encode(x).astype('float32'))
-
-    def cosine_sim(a, b):
-        return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
-    filtered_df['similarity'] = filtered_df['embedding'].apply(lambda emb: cosine_sim(query_embedding, emb))
-
-    # Pick top 3 similar tickets
-    top_k = filtered_df.sort_values(by='similarity', ascending=False).head(3)
-
-    # Prompt context
+def generate_llm_response(description, retrieved_df):
+    # Create formatted context from retrieved tickets
     context = "\n\n".join([
-        f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}; Assigned Group: {row.assignedgroup}; Status: {row.status}"
-        for _, row in top_k.iterrows()
-    ])
+    f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
+    for _, row in retrieved_df.iterrows()
+])
 
+
+
+    # Prompt for LLM
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Relevant Previous Tickets:\n{context}\n\n"
-        f"Suggest a concise, helpful resolution based on these:"
+        f"Previous Ticket Context:\n{context}\n\n"
+        f"Suggest a resolution:"
     )
 
+    # Generate the response
     output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
+
+    # Optional: insert newlines after sentence endings for better readability
     formatted_response = generated_text.replace('. ', '.\n')
 
+    # Markdown-formatted prompt for display
     formatted_prompt = (
         f"### 🧾 User Issue\n"
         f"{description}\n\n"
-        f"### 📂 Most Relevant Past Tickets\n"
+        f"### 📂 Previous Ticket Context\n"
         f"{context}\n\n"
         f"### 💡 Suggested Resolution"
     )
 
     return formatted_prompt, formatted_response
-
-
 
 
 # ---------------------
@@ -228,7 +198,7 @@ if st.button("Resolve Ticket"):
                 )
                 if email_sent:
                     st.info("📩 Resolution email sent to your provided email.")
-        else:               
+        else:
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input)
             st.subheader("📜 Similar Past Tickets")
@@ -239,7 +209,6 @@ if st.button("Resolve Ticket"):
             st.write(suggestion)
 
             st.session_state['suggestion'] = suggestion
-
 
 # --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
