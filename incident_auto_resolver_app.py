@@ -235,9 +235,17 @@ if st.button("Resolve Ticket"):
 
 
 # --- Manual email sending of suggested resolution ---
-if 'suggestion' in st.session_state:
+# Clear the input in session state if email was just sent
+if "email_sent_flag" in st.session_state and st.session_state["email_sent_flag"]:
+    st.session_state["manual_email"] = ""
+    st.session_state["desc_input"] = ""
+    st.session_state["user_email"] = ""
+    st.session_state["email_sent_flag"] = False  # reset flag after clearing
+    
+    # Now define the widget with key manual_email
     manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
-
+    
+    # When email sending button clicked
     if st.button("✉️ Send Suggested Resolution Email"):
         manual_email = st.session_state.get("manual_email", "").strip()
         if not manual_email:
@@ -251,10 +259,7 @@ if 'suggestion' in st.session_state:
             if email_sent:
                 st.success(f"📤 Suggested resolution emailed to {manual_email}.")
                 st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
-            
-                # Clear inputs by updating session state keys
-                st.session_state["manual_email"] = ""
-                st.session_state["desc_input"] = ""
-                st.session_state["user_email"] = ""
+                # Set a flag to clear inputs on next rerun
+                st.session_state["email_sent_flag"] = True
             else:
                 st.error("❌ Failed to send the email. Please check the address or try again later.")
