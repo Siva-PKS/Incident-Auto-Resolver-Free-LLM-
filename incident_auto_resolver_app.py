@@ -135,38 +135,32 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     if retrieved_df.empty:
         return "### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group."
 
+    # Take top 1 similar ticket (adjust if you want more)
+    top_k = retrieved_df.head(1)
+
+    # Prepare prompt with summary/description/resolution of similar ticket(s)
     context = "\n\n".join([
-        f"Ticket ID: {row.ticket_id}\n"
-        f"Summary: {row.summary}\n"
-        f"Description: {row.description}\n"
-        f"Resolution: {row.resolution}\n"
-        f"Assigned Group: {row.assignedgroup}\n"
-        f"Priority: {row.priority}\n"
-        f"Status: {row.status}\n"
-        f"Date: {row.date}"
-        for _, row in retrieved_df.iterrows()
+        f"Summary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
+        for _, row in top_k.iterrows()
     ])
 
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Relevant Previous Tickets:\n{context}\n\n"
-        f"Based on these, suggest a concise and helpful resolution to the user's issue:"
+        f"Based on the following similar past ticket(s):\n{context}\n\n"
+        f"Suggest a concise resolution:"
     )
 
-    output = llm_pipeline(llm_prompt, max_new_tokens=200)
+    output = llm_pipeline(llm_prompt, max_new_tokens=100)
     generated_text = output[0]['generated_text'].strip()
-    formatted_response = generated_text.replace('. ', '.\n')
+    final_response = generated_text.replace('. ', '.\n')
 
-    formatted_prompt = (
-        f"### 🧾 User Issue\n"
-        f"{description}\n\n"
-        f"### 📂 Relevant Past Tickets\n"
-        f"{context}\n\n"
-        f"### 💡 Suggested Resolution"
-    )
+    # Collect Ticket ID(s) of similar tickets
+    tickets_used = ", ".join([f"{row.ticket_id}" for _, row in top_k.iterrows()])
 
-    return formatted_prompt, formatted_response
+    # Format output with headers
+    formatted_output = f"Resolution:\n{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
 
+    return formatted_output, None
 
 # ---------------------
 # 🌐 Streamlit UI
