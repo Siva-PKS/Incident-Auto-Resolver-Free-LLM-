@@ -221,9 +221,8 @@ if st.button("Resolve Ticket"):
                 if ticket_info:
                     st.markdown(f"**Ticket ID:** {ticket_info['ticket_id']}")
                     st.markdown(f"**Description:** {ticket_info['description']}")
-                    st.markdown(f"**Resolution:** {ticket_info['resolution']}")
-            
-                st.write(suggestion)
+                    st.markdown(f"**Resolution:** {ticket_info['resolution']}")           
+                
             else:
                 st.warning("No similar tickets found.")
 
