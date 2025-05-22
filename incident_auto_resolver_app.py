@@ -256,8 +256,7 @@ if 'suggestion' in st.session_state and 'ticket_info' in st.session_state:
                 to_email=manual_email
             )
             if email_sent:
-                st.success(f"📤 Suggested resolution emailed to {manual_email}.")
-		st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
+                st.success(f"📤 Suggested resolution emailed to {manual_email}.")		
                 st.session_state["email_sent_flag"] = True
             else:
                 st.error("❌ Failed to send the email.")
