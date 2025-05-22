@@ -77,24 +77,34 @@ def find_exact_match(description):
     match_rows = closed_df[closed_df['description'].str.lower() == desc_lower]
     return match_rows.iloc[0] if not match_rows.empty else None
 
-def check_open_tickets_for_auto_email(description, assigned_group, similarity_threshold=0.85):
+def check_open_tickets_for_auto_email(description, assigned_group="", similarity_threshold=0.85):
     desc_lower = description.strip().lower()
     assigned_group_lower = assigned_group.strip().lower()
 
-    # Step 1: Exact match
-    matched = open_df[
-        (open_df['description'].str.strip().str.lower() == desc_lower) &
-        (open_df['assignedgroup'].str.strip().str.lower() == assigned_group_lower) &
-        (open_df['status'].str.strip().str.lower() == 'inprogress')
-    ]
+    if assigned_group_lower:
+        matched = open_df[
+            (open_df['description'].str.strip().str.lower() == desc_lower) &
+            (open_df['assignedgroup'].str.strip().str.lower() == assigned_group_lower) &
+            (open_df['status'].str.strip().str.lower() == 'inprogress')
+        ]
+    else:
+        matched = open_df[
+            (open_df['description'].str.strip().str.lower() == desc_lower) &
+            (open_df['status'].str.strip().str.lower() == 'inprogress')
+        ]
+
     if not matched.empty:
         return matched.iloc[0]
 
-    # Step 2: Similar match using embeddings
-    filtered_df = open_df[
-        (open_df['assignedgroup'].str.strip().str.lower() == assigned_group_lower) &
-        (open_df['status'].str.strip().str.lower() == 'inprogress')
-    ].copy()
+    if assigned_group_lower:
+        filtered_df = open_df[
+            (open_df['assignedgroup'].str.strip().str.lower() == assigned_group_lower) &
+            (open_df['status'].str.strip().str.lower() == 'inprogress')
+        ].copy()
+    else:
+        filtered_df = open_df[
+            (open_df['status'].str.strip().str.lower() == 'inprogress')
+        ].copy()
 
     if filtered_df.empty:
         return None
@@ -143,7 +153,7 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df, assigned_group):
+def generate_llm_response(description, retrieved_df, assigned_group=None):
     if assigned_group:
         retrieved_df = retrieved_df[
             (retrieved_df['assignedgroup'].str.lower() == assigned_group.lower()) &
@@ -175,8 +185,6 @@ def generate_llm_response(description, retrieved_df, assigned_group):
     formatted_prompt = f"{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
 
     return formatted_prompt, final_response
-
-
 
 # ---------------------
 # 🌐 Streamlit UI
