@@ -148,8 +148,7 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     ])
 
     llm_prompt = (
-        f"User Issue:\n{description}\n\n"
-        f"Relevant Previous Tickets:\n{context}\n\n"
+        f"User Issue:\n{description}\n\n"       
         f"Based on these, suggest a concise and helpful resolution to the user's issue:"
     )
 
