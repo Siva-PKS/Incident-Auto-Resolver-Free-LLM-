@@ -243,8 +243,7 @@ if 'suggestion' in st.session_state and 'ticket_info' in st.session_state:
         st.session_state["user_email"] = ""
         st.session_state["email_sent_flag"] = False
 
-    manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
-    manual_email = st.session_state.get("manual_email", "").strip()	
+    manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")  
 
     if st.button("✉️ Send Suggested Resolution Email"):     
         if not manual_email:
@@ -258,7 +257,7 @@ if 'suggestion' in st.session_state and 'ticket_info' in st.session_state:
             )
             if email_sent:
                 st.success(f"📤 Suggested resolution emailed to {manual_email}.")
-				st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
+		st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
                 st.session_state["email_sent_flag"] = True
             else:
                 st.error("❌ Failed to send the email.")
