@@ -126,13 +126,28 @@ def load_llm_pipeline():
 llm_pipeline = load_llm_pipeline()
 
 def generate_llm_response(description, retrieved_df):
-    # Create formatted context from retrieved tickets
+    desc_lower = description.lower()
+
+    # Filter retrieved_df by description, assignedgroup, and status 'closed'
+    filtered_df = retrieved_df[
+        (retrieved_df['description'].str.lower() == desc_lower) &
+        (retrieved_df['assignedgroup'].str.lower() == retrieved_df['assignedgroup'].str.lower()) &  # keep all assignedgroup rows (we can't filter without external input)
+        (retrieved_df['status'].str.lower() == 'closed')
+    ]
+
+    # If filtered_df is empty, fallback to entire retrieved_df filtered only by closed status
+    if filtered_df.empty:
+        filtered_df = retrieved_df[retrieved_df['status'].str.lower() == 'closed']
+
+    # If still empty, return no relevant tickets message
+    if filtered_df.empty:
+        return ("### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets matching your issue.")
+
+    # Create formatted context from filtered tickets
     context = "\n\n".join([
-    f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
-    for _, row in retrieved_df.iterrows()
-])
-
-
+        f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
+        for _, row in filtered_df.iterrows()
+    ])
 
     # Prompt for LLM
     llm_prompt = (
