@@ -217,44 +217,31 @@ if st.button("Resolve Ticket"):
                     # Get the top matching ticket for summary table
                     top_ticket = retrieved.iloc[0] if not retrieved.empty else None
                     if top_ticket is not None:
-                        suggestion_table = pd.DataFrame({
-                            "Field": ["Ticket ID", "Summary", "Description", "Resolution", "Assigned Group",
-                                      "Priority", "Status", "Date", "Suggested Resolution"],
-                            "Value": [top_ticket.ticket_id, top_ticket.summary, top_ticket.description,
-                                      top_ticket.resolution, top_ticket.assignedgroup, top_ticket.priority,
-                                      top_ticket.status, top_ticket.date, suggestion]
-                        })
-                        
-                        st.subheader("🧾 Summary of Top Match + Suggested Resolution")
-                        
-                        styled_table = suggestion_table.style.set_table_styles([
-                            {"selector": "th", "props": [
-                                ("text-align", "left"),
-                                ("font-weight", "bold"),
-                                ("white-space", "normal"),
-                                ("word-wrap", "break-word"),
-                                ("max-width", "300px")
-                            ]},
-                            {"selector": "td", "props": [
-                                ("text-align", "left"),
-                                ("white-space", "normal"),
-                                ("word-wrap", "break-word"),
-                                ("max-width", "300px")
-                            ]},
-                        ]).set_properties(**{
-                            'min-width': '100px',
-                            'max-width': '300px',
-                        })
-                        
-                        st.dataframe(styled_table, use_container_width=True)
-                        
-                        st.session_state['suggestion'] = suggestion
-
-                    else:
-                        st.subheader("🤔 Suggested Resolution")
-                        st.write(suggestion)
-                        st.session_state['suggestion'] = suggestion
-
+                suggestion_only_df = pd.DataFrame({
+                        "Suggested Resolution": [suggestion]
+                    })
+                    
+                    st.subheader("💡 Suggested Resolution")
+                    styled_table = suggestion_only_df.style.set_table_styles([
+                        {"selector": "th", "props": [
+                            ("text-align", "left"),
+                            ("font-weight", "bold"),
+                            ("white-space", "normal"),
+                            ("word-wrap", "break-word"),
+                            ("max-width", "600px"),
+                        ]},
+                        {"selector": "td", "props": [
+                            ("text-align", "left"),
+                            ("white-space", "normal"),
+                            ("word-wrap", "break-word"),
+                            ("max-width", "600px"),
+                        ]},
+                    ]).set_properties(**{
+                        'min-width': '400px',
+                        'max-width': '600px',
+                    })
+                    
+                    st.dataframe(styled_table, use_container_width=True)
 
 # --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
