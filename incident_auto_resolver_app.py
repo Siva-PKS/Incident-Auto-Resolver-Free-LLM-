@@ -30,7 +30,12 @@ SMTP_USER = "spkincident@gmail.com"
 SMTP_PASSWORD = "jaao zsnq peke klgo"
 
 # ---------------------
-# 🕒 Load tickets
+# 🔵 Logging configuration (commented out as per request)
+# ---------------------
+# logging.basicConfig(filename='email_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# ---------------------
+# 🕕 Load tickets
 # ---------------------
 @st.cache_data(show_spinner=False)
 def load_closed_tickets():
@@ -77,52 +82,17 @@ def find_exact_match(description):
     match_rows = closed_df[closed_df['description'].str.lower() == desc_lower]
     return match_rows.iloc[0] if not match_rows.empty else None
 
-def check_open_tickets_for_auto_email(description, assigned_group="", similarity_threshold=0.85):
-    desc_lower = description.strip().lower()
-    assigned_group_lower = assigned_group.strip().lower()
-
-    if assigned_group_lower:
-        matched = open_df[
-            (open_df['description'].str.strip().str.lower() == desc_lower) &
-            (open_df['assignedgroup'].str.strip().str.lower() == assigned_group_lower) &
-            (open_df['status'].str.strip().str.lower() == 'inprogress')
-        ]
-    else:
-        matched = open_df[
-            (open_df['description'].str.strip().str.lower() == desc_lower) &
-            (open_df['status'].str.strip().str.lower() == 'inprogress')
-        ]
-
-    if not matched.empty:
-        return matched.iloc[0]
-
-    if assigned_group_lower:
-        filtered_df = open_df[
-            (open_df['assignedgroup'].str.strip().str.lower() == assigned_group_lower) &
-            (open_df['status'].str.strip().str.lower() == 'inprogress')
-        ].copy()
-    else:
-        filtered_df = open_df[
-            (open_df['status'].str.strip().str.lower() == 'inprogress')
-        ].copy()
-
-    if filtered_df.empty:
-        return None
-
-    query_emb = model.encode(description).astype('float32')
-    filtered_df['embedding'] = filtered_df['description'].apply(lambda x: model.encode(x).tolist())
-    filtered_df['similarity'] = filtered_df['embedding'].apply(lambda x: cosine_similarity(query_emb, np.array(x)))
-
-    top_match = filtered_df.sort_values(by='similarity', ascending=False).iloc[0]
-
-    if top_match['similarity'] >= similarity_threshold:
-        return top_match
+def check_open_tickets_for_auto_email(description, assigned_group):
+    desc_lower = description.lower()
+    assigned_group_lower = assigned_group.lower()
+    filtered = open_df[
+        (open_df['description'].str.lower() == desc_lower) &
+        (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
+        (open_df['status'].str.lower() == 'closed')
+    ]
+    if not filtered.empty:
+        return filtered.iloc[0]
     return None
-
-# ---------------------
-# 🌐 Streamlit UI
-# ---------------------
-# [UI logic remains unchanged from previous version]
 
 # ---------------------
 # 📧 Email sender
@@ -140,12 +110,14 @@ def send_email(subject, body, to_email):
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
+        # logging.info(f"Email successfully sent to {to_email} | Subject: {subject}")
         return True
     except Exception as e:
+        # logging.error(f"Failed to send email to {to_email} | Subject: {subject} | Error: {e}")
         return False
 
 # ---------------------
-# 🧠 Local LLM + RAG resolution using Hugging Face model
+# 🧬 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -153,38 +125,40 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df, assigned_group=None):
-    if assigned_group:
-        retrieved_df = retrieved_df[
-            (retrieved_df['assignedgroup'].str.lower() == assigned_group.lower()) &
-            (retrieved_df['status'].str.lower() == 'closed')
-        ]
-
-    if retrieved_df.empty:
-        return ("### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group.")
-
-    top_k = retrieved_df.head(1)
-
+def generate_llm_response(description, retrieved_df):
+    # Create formatted context from retrieved tickets
     context = "\n\n".join([
-        f"Summary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
-        for _, row in top_k.iterrows()
-    ])
+    f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
+    for _, row in retrieved_df.iterrows()
+])
 
+
+
+    # Prompt for LLM
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Based on the following similar past ticket(s):\n{context}\n\n"
-        f"Suggest a concise resolution using the provided 'Resolution' field only."
+        f"Previous Ticket Context:\n{context}\n\n"
+        f"Suggest a resolution:"
     )
 
-    output = llm_pipeline(llm_prompt, max_new_tokens=100)
+    # Generate the response
+    output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
-    final_response = generated_text.replace('. ', '.\n')
 
-    tickets_used = ", ".join([f"{row.ticket_id}" for _, row in top_k.iterrows()])
+    # Optional: insert newlines after sentence endings for better readability
+    formatted_response = generated_text.replace('. ', '.\n')
 
-    formatted_prompt = f"{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
+    # Markdown-formatted prompt for display
+    formatted_prompt = (
+        f"### 🧾 User Issue\n"
+        f"{description}\n\n"
+        f"### 📂 Previous Ticket Context\n"
+        f"{context}\n\n"
+        f"### 💡 Suggested Resolution"
+    )
 
-    return formatted_prompt, final_response
+    return formatted_prompt, formatted_response
+
 
 # ---------------------
 # 🌐 Streamlit UI
@@ -192,22 +166,7 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
 st.title("🎻 Incident Auto-Resolver (RAG + Local LLM + Auto Email)")
 
 desc_input = st.text_area("📝 Enter new incident description:")
-
-is_support_member = st.checkbox("👨‍💻 I am an IT support team member")
-
-auto_email_placeholder = ""
-if is_support_member:
-    matched_ticket = open_df[open_df['description'].str.lower() == desc_input.lower()]
-    if not matched_ticket.empty:
-        auto_email_placeholder = matched_ticket.iloc[0].get('email', '')
-        st.text_input("📧 Customer Email (auto-filled)", value=auto_email_placeholder, disabled=True, key="user_email")
-    else:
-        st.warning("No open ticket found with matching description to auto-fill email.")
-        st.text_input("📧 Customer Email", key="user_email")
-else:
-    st.text_input("📧 Customer Email", key="user_email")
-
-user_email = st.session_state.get("user_email", "").strip()
+user_email = st.text_input("📧 Customer Email")
 
 if st.button("Resolve Ticket"):
     if not desc_input or not user_email:
@@ -245,9 +204,9 @@ if st.button("Resolve Ticket"):
             st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
-            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved, assignedgroup=NONE)
+            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
             st.subheader("🤔 Suggested Resolution")
-            st.write("**Resolution:**", suggestion)
+            st.write(suggestion)
 
             st.session_state['suggestion'] = suggestion
 
@@ -270,38 +229,3 @@ if 'suggestion' in st.session_state:
                 st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
             else:
                 st.error("❌ Failed to send the email. Please check the address or try again later.")
-
-# ---------------------
-# 🔄 Auto-Resolve All Open Tickets using LLM + RAG
-# ---------------------
-st.header("🧠 Auto-Resolve Open Tickets (RAG + LLM)")
-
-if st.button("Run Auto-Resolution for All Open Tickets"):
-    results = []
-    inprogress_tickets = open_df[open_df['status'].str.lower() == 'inprogress']
-    for _, row in inprogress_tickets.iterrows():
-        description = row['description']
-        assigned_group = row['assignedgroup']
-        email = row['email']
-        ticket_id = row['ticket_id']
-
-        match = find_exact_match(description)
-        if match is not None:
-            resolution = match['resolution']
-            source = "Exact Match"
-        else:
-            retrieved = retrieve_similar(description)
-            _, resolution = generate_llm_response(description, retrieved, assigned_group)
-            source = "LLM + RAG"
-
-        results.append({
-            "ticket_id": ticket_id,
-            "description": description,
-            "assigned_group": assigned_group,
-            "email": email,
-            "suggested_resolution": resolution,
-            "source": source
-        })
-
-    st.subheader("📋 Auto-Resolved Ticket Suggestions")
-    st.dataframe(pd.DataFrame(results))
