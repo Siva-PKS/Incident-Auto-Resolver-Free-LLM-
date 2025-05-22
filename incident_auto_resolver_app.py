@@ -125,21 +125,23 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df):
-    global open_df, closed_df, model  # Ensure access to the model and datasets
 
-    # Normalize for comparison
+def generate_llm_response(description, _):
+    global open_df, closed_df, model
+
+    # Normalize all required columns
     open_df['assignedgroup'] = open_df['assignedgroup'].str.lower().str.strip()
     closed_df['assignedgroup'] = closed_df['assignedgroup'].str.lower().str.strip()
-    retrieved_df['assignedgroup'] = retrieved_df['assignedgroup'].str.lower().str.strip()
+    closed_df['status'] = closed_df['status'].str.lower().str.strip()
+    closed_df['description'] = closed_df['description'].astype(str)
 
-    # Get assigned groups from open_df with status 'closed'
-    valid_groups = open_df[open_df['status'].str.lower() == 'closed']['assignedgroup'].unique()
+    # Get valid assigned groups from open_df with status 'closed'
+    valid_groups = open_df[open_df['status'] == 'closed']['assignedgroup'].unique()
 
-    # Filter retrieved_df by valid assigned group and status 'closed'
-    filtered_df = retrieved_df[
-        (retrieved_df['status'].str.lower() == 'closed') &
-        (retrieved_df['assignedgroup'].isin(valid_groups))
+    # Filter directly from closed_df instead of a limited retrieved_df
+    filtered_df = closed_df[
+        (closed_df['status'] == 'closed') &
+        (closed_df['assignedgroup'].isin(valid_groups))
     ].copy()
 
     if filtered_df.empty:
@@ -157,7 +159,7 @@ def generate_llm_response(description, retrieved_df):
     # Take top 3 most similar entries
     top_k = filtered_df.sort_values(by='similarity', ascending=False).head(3)
 
-    # Prepare prompt context
+    # Build prompt context
     context = "\n\n".join([
         f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}; Assigned Group: {row.assignedgroup}; Status: {row.status}"
         for _, row in top_k.iterrows()
@@ -182,6 +184,7 @@ def generate_llm_response(description, retrieved_df):
     )
 
     return formatted_prompt, formatted_response
+
 
 
 # ---------------------
