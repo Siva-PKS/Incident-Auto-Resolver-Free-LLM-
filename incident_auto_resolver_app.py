@@ -30,7 +30,7 @@ SMTP_USER = "spkincident@gmail.com"
 SMTP_PASSWORD = "jaao zsnq peke klgo"
 
 # ---------------------
-# 🕕 Load tickets
+# 🕒 Load tickets
 # ---------------------
 @st.cache_data(show_spinner=False)
 def load_closed_tickets():
@@ -110,7 +110,7 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# 🧬 Local LLM + RAG resolution using Hugging Face model
+# 🦠 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -138,7 +138,7 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
         f"Based on the following similar past ticket(s):\n{context}\n\n"
-        f"Suggest a concise resolution using the provided 'Resolution' field only:"
+        f"Suggest a concise resolution using the provided 'Resolution' field only."
     )
 
     output = llm_pipeline(llm_prompt, max_new_tokens=100)
