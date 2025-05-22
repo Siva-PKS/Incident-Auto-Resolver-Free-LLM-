@@ -75,8 +75,8 @@ def retrieve_similar(description, k=3):
     query_emb = model.encode(description).astype('float32')
     sims = np.array([cosine_similarity(query_emb, emb) for emb in embeddings])
     indices = sims.argsort()[-k:][::-1]
-    similar_tickets = closed_df.iloc[indices].copy()
-    similar_tickets['similarity'] = sims[indices]
+    # Safely slice the relevant rows and add similarity scores
+    similar_tickets = closed_df.iloc[indices].copy()   
     similar_tickets['similarity'] = similar_tickets['similarity'].round(3)
     return similar_tickets
 
