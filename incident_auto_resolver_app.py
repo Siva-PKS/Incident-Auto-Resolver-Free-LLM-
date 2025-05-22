@@ -237,12 +237,13 @@ if 'suggestion' in st.session_state:
             st.warning("Please enter an email address to send the suggested resolution.")
         else:
             email_sent = send_email(
-                subject="Suggested Resolution to Your Reported Issue",
+                subject="Suggested Resolution to Your Reported Issue" {ticket_info['ticket_id']},
                 body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{st.session_state['suggestion']}\n\nRegards,\nSupport Team",
                 to_email=manual_email
             )
             if email_sent:
                 st.success(f"📤 Suggested resolution emailed to `{manual_email}`.")
                 st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
+                manual_email  = ""
             else:
                 st.error("❌ Failed to send the email. Please check the address or try again later.")
