@@ -245,13 +245,8 @@ if 'suggestion' in st.session_state and 'ticket_info' in st.session_state:
         else:
             ticket_info = st.session_state['ticket_info']
             subject = f"Suggested Resolution to Your Reported Issue [Ticket ID: {ticket_info['ticket_id']}]"
-            body = (
-                f"Hello,\n\n"
-                f"Based on your issue:\n\"{ticket_info['description']}\"\n\n"
-                f"Here is a suggested resolution:\n\n{st.session_state['suggestion']}\n\n"
-                f"Previous Resolution:\n{ticket_info['resolution']}\n\n"
-                f"Regards,\nSupport Team"
-            )
+           body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{st.session_state['suggestion']}\n\nRegards,\nSupport Team",
+                to_email=manual_email
 
             email_sent = send_email(subject=subject, body=body, to_email=manual_email)
 
