@@ -125,46 +125,39 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df, assigned_group):
-    # Filter retrieved_df by assigned_group (case-insensitive) and status 'closed' if assigned_group provided
-    if assigned_group:
-        retrieved_df = retrieved_df[
-            (retrieved_df['assignedgroup'].str.lower() == assigned_group.lower()) &
-            (retrieved_df['status'].str.lower() == 'closed')
-        ]
+def generate_llm_response(description, retrieved_df):
+    # Create formatted context from retrieved tickets
+    context = "\n\n".join([
+    f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
+    for _, row in retrieved_df.iterrows()
+])
 
-    if retrieved_df.empty:
-        return ("### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group.")
 
-    # Prepare ticket IDs string
-    ticket_ids = ", ".join(retrieved_df['ticket_id'].astype(str).unique())
 
-    # Create prompt WITHOUT full context, just the description and mention that tickets exist
+    # Prompt for LLM
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Based on previous similar tickets with IDs: {ticket_ids}, suggest a concise and helpful resolution:"
+        f"Previous Ticket Context:\n{context}\n\n"
+        f"Suggest a resolution:"
     )
 
-    # Generate the LLM response
+    # Generate the response
     output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
 
-    # Format output as requested
-    formatted_response = (
-        f"Resolution: {generated_text}\n"
-        f"Used Similar Ticket(s): {ticket_ids}"
-    )
+    # Optional: insert newlines after sentence endings for better readability
+    formatted_response = generated_text.replace('. ', '.\n')
 
-    # Optionally, you can format prompt if you want to show on UI (or return None)
+    # Markdown-formatted prompt for display
     formatted_prompt = (
         f"### 🧾 User Issue\n"
         f"{description}\n\n"
-        f"### 💡 Suggested Resolution\n"
-        f"{formatted_response}"
+        f"### 📂 Previous Ticket Context\n"
+        f"{context}\n\n"
+        f"### 💡 Suggested Resolution"
     )
 
     return formatted_prompt, formatted_response
-
 
 
 # ---------------------
@@ -184,26 +177,38 @@ if st.button("Resolve Ticket"):
             st.success("✅ Exact match found!")
             st.write("**Resolution:**", match['resolution'])
 
-            # ... existing email sending logic ...
-
+            auto_email_ticket = check_open_tickets_for_auto_email(match['description'], match['assignedgroup'])
+            if auto_email_ticket is not None:
+                auto_email = auto_email_ticket.get('email', None)
+                if auto_email:
+                    email_sent = send_email(
+                        subject=f"Issue Resolved: {match['description']}",
+                        body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
+                        to_email=auto_email
+                    )
+                    if email_sent:
+                        st.info(f"📩 Resolution email sent automatically to {auto_email}")
+                else:
+                    st.warning("No email found in matching open ticket for auto sending.")
+            else:
+                email_sent = send_email(
+                    subject=f"Issue Resolved: {match['description']}",
+                    body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
+                    to_email=user_email
+                )
+                if email_sent:
+                    st.info("📩 Resolution email sent to your provided email.")
         else:
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input)
             st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
-            # Get assigned group from the first retrieved similar ticket if available, else None
-            assigned_group = None
-            if not retrieved.empty:
-                assigned_group = retrieved.iloc[0]['assignedgroup']
-
-            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved, assigned_group)
-
+            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
             st.subheader("🤔 Suggested Resolution")
             st.write(suggestion)
 
             st.session_state['suggestion'] = suggestion
-
 
 # --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
