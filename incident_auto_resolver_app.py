@@ -257,7 +257,6 @@ if 'suggestion' in st.session_state and 'ticket_info' in st.session_state:
             )
             if email_sent:
                 st.success(f"📤 Suggested resolution emailed to {manual_email}.")		
-                st.session_state["email_sent_flag"] = True
-                st.rerun()
+                st.session_state["email_sent_flag"] = True               
             else:
                 st.error("❌ Failed to send the email.")
