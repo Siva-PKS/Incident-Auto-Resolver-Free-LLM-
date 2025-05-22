@@ -15,6 +15,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import smtplib
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from sentence_transformers import SentenceTransformer
@@ -29,7 +30,7 @@ SMTP_USER = "spkincident@gmail.com"
 SMTP_PASSWORD = "jaao zsnq peke klgo"
 
 # ---------------------
-# 🕕 Load tickets
+# 🕒 Load tickets
 # ---------------------
 @st.cache_data(show_spinner=False)
 def load_closed_tickets():
@@ -109,7 +110,7 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# 🧬 Local LLM + RAG resolution using Hugging Face model
+# 🦠 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -129,26 +130,24 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
 
     top_k = retrieved_df.head(1)
 
-    # Use only resolution field(s) for context to the LLM
-    resolutions = "\n\n".join([
-        f"Resolution: {row.resolution}"
+    context = "\n\n".join([
+        f"Summary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
         for _, row in top_k.iterrows()
     ])
 
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Based on the following resolution(s) from similar past ticket(s):\n{resolutions}\n\n"
-        f"Suggest a concise resolution:"
+        f"Based on the following similar past ticket(s):\n{context}\n\n"
+        f"Suggest a concise resolution using the provided 'Resolution' field only."
     )
 
     output = llm_pipeline(llm_prompt, max_new_tokens=100)
     generated_text = output[0]['generated_text'].strip()
-
     final_response = generated_text.replace('. ', '.\n')
 
     tickets_used = ", ".join([f"{row.ticket_id}" for _, row in top_k.iterrows()])
 
-    formatted_prompt = f"Prompt used:\n{llm_prompt}\n\nGenerated Resolution:\n{final_response}\n\nUsed Ticket(s): {tickets_used}"
+    formatted_prompt = f"{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
 
     return formatted_prompt, final_response
 
@@ -158,7 +157,22 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
 st.title("🎻 Incident Auto-Resolver (RAG + Local LLM + Auto Email)")
 
 desc_input = st.text_area("📝 Enter new incident description:")
-user_email = st.text_input("📧 Customer Email")
+
+is_support_member = st.checkbox("👨‍💻 I am an IT support team member")
+
+auto_email_placeholder = ""
+if is_support_member:
+    matched_ticket = open_df[open_df['description'].str.lower() == desc_input.lower()]
+    if not matched_ticket.empty:
+        auto_email_placeholder = matched_ticket.iloc[0].get('email', '')
+        st.text_input("📧 Customer Email (auto-filled)", value=auto_email_placeholder, disabled=True, key="user_email")
+    else:
+        st.warning("No open ticket found with matching description to auto-fill email.")
+        st.text_input("📧 Customer Email", key="user_email")
+else:
+    st.text_input("📧 Customer Email", key="user_email")
+
+user_email = st.session_state.get("user_email", "").strip()
 
 if st.button("Resolve Ticket"):
     if not desc_input or not user_email:
@@ -200,9 +214,6 @@ if st.button("Resolve Ticket"):
             st.subheader("🤔 Suggested Resolution")
             st.write("**Resolution:**", suggestion)
 
-            with st.expander("🔍 Prompt used for RAG resolution"):
-                st.code(formatted_prompt, language='text')
-
             st.session_state['suggestion'] = suggestion
 
 # --- Manual email sending of suggested resolution ---
@@ -224,3 +235,37 @@ if 'suggestion' in st.session_state:
                 st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
             else:
                 st.error("❌ Failed to send the email. Please check the address or try again later.")
+
+# ---------------------
+# 🔄 Auto-Resolve All Open Tickets using LLM + RAG
+# ---------------------
+st.header("🧠 Auto-Resolve Open Tickets (RAG + LLM)")
+
+if st.button("Run Auto-Resolution for All Open Tickets"):
+    results = []
+    for _, row in open_df.iterrows():
+        description = row['description']
+        assigned_group = row['assignedgroup']
+        email = row['email']
+        ticket_id = row['ticket_id']
+
+        match = find_exact_match(description)
+        if match is not None:
+            resolution = match['resolution']
+            source = "Exact Match"
+        else:
+            retrieved = retrieve_similar(description)
+            _, resolution = generate_llm_response(description, retrieved, assigned_group)
+            source = "LLM + RAG"
+
+        results.append({
+            "ticket_id": ticket_id,
+            "description": description,
+            "assigned_group": assigned_group,
+            "email": email,
+            "suggested_resolution": resolution,
+            "source": source
+        })
+
+    st.subheader("📋 Auto-Resolved Ticket Suggestions")
+    st.dataframe(pd.DataFrame(results))
