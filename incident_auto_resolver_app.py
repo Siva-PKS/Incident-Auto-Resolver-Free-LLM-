@@ -136,33 +136,31 @@ def generate_llm_response(description, retrieved_df, assigned_group):
     if retrieved_df.empty:
         return ("### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group.")
 
-    # Create formatted context from retrieved tickets
-    context = "\n\n".join([
-        f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
-        for _, row in retrieved_df.iterrows()
-    ])
+    # Prepare ticket IDs string
+    ticket_ids = ", ".join(retrieved_df['ticket_id'].astype(str).unique())
 
-    # Prompt for LLM
+    # Create prompt WITHOUT full context, just the description and mention that tickets exist
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Previous Ticket Context:\n{context}\n\n"
-        f"Suggest a resolution:"
+        f"Based on previous similar tickets with IDs: {ticket_ids}, suggest a concise and helpful resolution:"
     )
 
-    # Generate the response
+    # Generate the LLM response
     output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
 
-    # Optional: insert newlines after sentence endings for better readability
-    formatted_response = generated_text.replace('. ', '.\n')
+    # Format output as requested
+    formatted_response = (
+        f"Resolution: {generated_text}\n"
+        f"Used Similar Ticket(s): {ticket_ids}"
+    )
 
-    # Markdown-formatted prompt for display
+    # Optionally, you can format prompt if you want to show on UI (or return None)
     formatted_prompt = (
         f"### 🧾 User Issue\n"
         f"{description}\n\n"
-        f"### 📂 Previous Ticket Context\n"
-        f"{context}\n\n"
-        f"### 💡 Suggested Resolution"
+        f"### 💡 Suggested Resolution\n"
+        f"{formatted_response}"
     )
 
     return formatted_prompt, formatted_response
