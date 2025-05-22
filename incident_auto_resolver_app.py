@@ -1,15 +1,17 @@
-# Fix for: "RuntimeError: no running event loop" on Python 3.10+
+# --- Fix known Streamlit + torch + asyncio issues ---
+import os
 import asyncio
 import sys
 
+# Fix for Streamlit file watcher + torch.classes crash
+os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
+
+# Fix for Python 3.10+ async event loop issue
 if sys.platform.startswith('linux') and sys.version_info >= (3, 10):
     try:
         asyncio.get_running_loop()
     except RuntimeError:
         asyncio.set_event_loop(asyncio.new_event_loop())
-
-import os
-os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
 
 import streamlit as st
 import pandas as pd
