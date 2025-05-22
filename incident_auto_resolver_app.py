@@ -244,9 +244,9 @@ if 'suggestion' in st.session_state and 'ticket_info' in st.session_state:
         st.session_state["email_sent_flag"] = False
 
     manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
+    manual_email = st.session_state.get("manual_email", "").strip()	
 
-    if st.button("✉️ Send Suggested Resolution Email"):
-     manual_email = st.session_state.get("manual_email", "").strip()
+    if st.button("✉️ Send Suggested Resolution Email"):     
         if not manual_email:
             st.warning("Please enter an email address to send the suggested resolution.")
         else:
