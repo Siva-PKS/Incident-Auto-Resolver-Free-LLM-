@@ -125,54 +125,59 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df):
+def generate_llm_response(description, retrieved_df, assigned_group=None):
     desc_lower = description.lower()
 
-    # Filter retrieved_df by description, assignedgroup, and status 'closed'
+    # Filter tickets from closed_df (should already be closed tickets)
     filtered_df = retrieved_df[
         (retrieved_df['description'].str.lower() == desc_lower) &
-        (retrieved_df['assignedgroup'].str.lower() == retrieved_df['assignedgroup'].str.lower()) &  # keep all assignedgroup rows (we can't filter without external input)
         (retrieved_df['status'].str.lower() == 'closed')
     ]
 
-    # If filtered_df is empty, fallback to entire retrieved_df filtered only by closed status
-    if filtered_df.empty:
-        filtered_df = retrieved_df[retrieved_df['status'].str.lower() == 'closed']
+    if assigned_group:
+        filtered_df = filtered_df[
+            filtered_df['assignedgroup'].str.lower() == assigned_group.lower()
+        ]
 
-    # If still empty, return no relevant tickets message
+    # If no filtered tickets, fallback to any closed tickets with similar description (ignore assignedgroup)
     if filtered_df.empty:
-        return ("### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets matching your issue.")
+        filtered_df = retrieved_df[
+            (retrieved_df['description'].str.lower() == desc_lower) &
+            (retrieved_df['status'].str.lower() == 'closed')
+        ]
 
-    # Create formatted context from filtered tickets
+    # If still empty, show message
+    if filtered_df.empty:
+        return ("### ℹ️ No relevant closed tickets found.", "Unable to find similar closed tickets matching your issue.")
+
+    # Build context from filtered closed tickets only
     context = "\n\n".join([
         f"Ticket ID: {row.ticket_id}; Summary: {row.summary}; Description: {row.description}; Resolution: {row.resolution}"
         for _, row in filtered_df.iterrows()
     ])
 
-    # Prompt for LLM
+    # Create prompt for LLM
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Previous Ticket Context:\n{context}\n\n"
+        f"Previous Closed Ticket Context:\n{context}\n\n"
         f"Suggest a resolution:"
     )
 
-    # Generate the response
     output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
 
-    # Optional: insert newlines after sentence endings for better readability
     formatted_response = generated_text.replace('. ', '.\n')
 
-    # Markdown-formatted prompt for display
     formatted_prompt = (
         f"### 🧾 User Issue\n"
         f"{description}\n\n"
-        f"### 📂 Previous Ticket Context\n"
+        f"### 📂 Previous Closed Ticket Context\n"
         f"{context}\n\n"
         f"### 💡 Suggested Resolution"
     )
 
     return formatted_prompt, formatted_response
+
 
 
 # ---------------------
