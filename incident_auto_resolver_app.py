@@ -138,7 +138,7 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
         f"Based on the following similar past ticket(s):\n{context}\n\n"
-        f"Suggest a concise resolution:"
+        f"Suggest a concise resolution using the provided 'Resolution' field only:"
     )
 
     output = llm_pipeline(llm_prompt, max_new_tokens=100)
