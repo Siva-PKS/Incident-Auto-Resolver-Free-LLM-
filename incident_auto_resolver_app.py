@@ -148,7 +148,19 @@ if st.button("Resolve Ticket"):
         else:
             st.warning("⚠️ No exact condition match found. Generating resolution via LLM...")
             st.subheader("📜 Similar Past Tickets")
-            st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
+            for i, row in retrieved.iterrows():
+                st.markdown(f"""
+                **Ticket ID:** {row.ticket_id}  
+                **Summary:** {row.summary}  
+                **Assigned Group:** {row.assignedgroup}  
+                **Status:** {row.status}  
+                **Date:** {row.date}  
+                **Description:**  
+                {row.description}  
+                **Resolution:**  
+                _{row.resolution}_  
+                ---
+                """)
 
             suggested_resolution = generate_llm_response(desc_input, retrieved)
             st.subheader("🤖 Suggested Resolution")
