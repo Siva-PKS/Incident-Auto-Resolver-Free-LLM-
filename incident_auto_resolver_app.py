@@ -15,7 +15,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import smtplib
-import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from sentence_transformers import SentenceTransformer
@@ -30,7 +29,7 @@ SMTP_USER = "spkincident@gmail.com"
 SMTP_PASSWORD = "jaao zsnq peke klgo"
 
 # ---------------------
-# 🕒 Load tickets
+# 🕕 Load tickets
 # ---------------------
 @st.cache_data(show_spinner=False)
 def load_closed_tickets():
@@ -110,7 +109,7 @@ def send_email(subject, body, to_email):
         return False
 
 # ---------------------
-# 🦠 Local LLM + RAG resolution using Hugging Face model
+# 🧬 Local LLM + RAG resolution using Hugging Face model
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -130,24 +129,26 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
 
     top_k = retrieved_df.head(1)
 
-    context = "\n\n".join([
-        f"Summary: {row.summary}\nDescription: {row.description}\nResolution: {row.resolution}"
+    # Use only resolution field(s) for context to the LLM
+    resolutions = "\n\n".join([
+        f"Resolution: {row.resolution}"
         for _, row in top_k.iterrows()
     ])
 
     llm_prompt = (
         f"User Issue:\n{description}\n\n"
-        f"Based on the following similar past ticket(s):\n{context}\n\n"
-        f"Suggest a concise resolution using the provided 'Resolution' field only."
+        f"Based on the following resolution(s) from similar past ticket(s):\n{resolutions}\n\n"
+        f"Suggest a concise resolution:"
     )
 
     output = llm_pipeline(llm_prompt, max_new_tokens=100)
     generated_text = output[0]['generated_text'].strip()
+
     final_response = generated_text.replace('. ', '.\n')
 
     tickets_used = ", ".join([f"{row.ticket_id}" for _, row in top_k.iterrows()])
 
-    formatted_prompt = f"{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
+    formatted_prompt = f"Prompt used:\n{llm_prompt}\n\nGenerated Resolution:\n{final_response}\n\nUsed Ticket(s): {tickets_used}"
 
     return formatted_prompt, final_response
 
@@ -198,6 +199,9 @@ if st.button("Resolve Ticket"):
             formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
             st.subheader("🤔 Suggested Resolution")
             st.write("**Resolution:**", suggestion)
+
+            with st.expander("🔍 Prompt used for RAG resolution"):
+                st.code(formatted_prompt, language='text')
 
             st.session_state['suggestion'] = suggestion
 
