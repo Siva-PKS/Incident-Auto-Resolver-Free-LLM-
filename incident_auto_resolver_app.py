@@ -207,16 +207,32 @@ if st.button("Resolve Ticket"):
                 if email_sent:
                     st.info("📩 Resolution email sent to your provided email.")
         else:
-            st.warning("No exact match. Retrieving similar tickets and generating resolution...")
-            retrieved = retrieve_similar(desc_input)
-            st.subheader("📜 Similar Past Tickets")
-            st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
+                else:
+                    st.warning("No exact match. Retrieving similar tickets and generating resolution...")
+                    retrieved = retrieve_similar(desc_input)
+                    st.subheader("📜 Similar Past Tickets")
+                    st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'priority', 'status', 'date']])
+                
+                    formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
+                
+                    # Get the top matching ticket for summary table
+                    top_ticket = retrieved.iloc[0] if not retrieved.empty else None
+                    if top_ticket is not None:
+                        suggestion_table = pd.DataFrame({
+                            "Field": ["Ticket ID", "Summary", "Description", "Resolution", "Assigned Group",
+                                      "Priority", "Status", "Date", "Suggested Resolution"],
+                            "Value": [top_ticket.ticket_id, top_ticket.summary, top_ticket.description,
+                                      top_ticket.resolution, top_ticket.assignedgroup, top_ticket.priority,
+                                      top_ticket.status, top_ticket.date, suggestion]
+                        })
+                        st.subheader("🧾 Summary of Top Match + Suggested Resolution")
+                        st.table(suggestion_table)
+                        st.session_state['suggestion'] = suggestion
+                    else:
+                        st.subheader("🤔 Suggested Resolution")
+                        st.write(suggestion)
+                        st.session_state['suggestion'] = suggestion
 
-            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
-            st.subheader("🤔 Suggested Resolution")
-            st.write(suggestion)
-
-            st.session_state['suggestion'] = suggestion
 
 # --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
