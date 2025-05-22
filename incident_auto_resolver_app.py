@@ -143,7 +143,7 @@ def load_llm_pipeline():
 
 llm_pipeline = load_llm_pipeline()
 
-def generate_llm_response(description, retrieved_df, assigned_group=None):
+def generate_llm_response(description, retrieved_df, assigned_group):
     if assigned_group:
         retrieved_df = retrieved_df[
             (retrieved_df['assignedgroup'].str.lower() == assigned_group.lower()) &
@@ -237,7 +237,7 @@ if st.button("Resolve Ticket"):
             st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
 
-            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
+            formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved, assignedgroup)
             st.subheader("🤔 Suggested Resolution")
             st.write("**Resolution:**", suggestion)
 
