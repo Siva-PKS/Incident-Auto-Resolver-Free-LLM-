@@ -217,31 +217,32 @@ if st.button("Resolve Ticket"):
                     # Get the top matching ticket for summary table
                     top_ticket = retrieved.iloc[0] if not retrieved.empty else None
                     if top_ticket is not None:
-                suggestion_only_df = pd.DataFrame({
-                        "Suggested Resolution": [suggestion]
-                    })
+                           suggestion_only_df = pd.DataFrame({
+                            "Suggested Resolution": [suggestion]
+                        })
                     
-                    st.subheader("💡 Suggested Resolution")
-                    styled_table = suggestion_only_df.style.set_table_styles([
-                        {"selector": "th", "props": [
-                            ("text-align", "left"),
-                            ("font-weight", "bold"),
-                            ("white-space", "normal"),
-                            ("word-wrap", "break-word"),
-                            ("max-width", "600px"),
-                        ]},
-                        {"selector": "td", "props": [
-                            ("text-align", "left"),
-                            ("white-space", "normal"),
-                            ("word-wrap", "break-word"),
-                            ("max-width", "600px"),
-                        ]},
-                    ]).set_properties(**{
-                        'min-width': '400px',
-                        'max-width': '600px',
-                    })
+                        st.subheader("💡 Suggested Resolution")
+                        styled_table = suggestion_only_df.style.set_table_styles([
+                            {"selector": "th", "props": [
+                                ("text-align", "left"),
+                                ("font-weight", "bold"),
+                                ("white-space", "normal"),
+                                ("word-wrap", "break-word"),
+                                ("max-width", "600px"),
+                            ]},
+                            {"selector": "td", "props": [
+                                ("text-align", "left"),
+                                ("white-space", "normal"),
+                                ("word-wrap", "break-word"),
+                                ("max-width", "600px"),
+                            ]},
+                        ]).set_properties(**{
+                            'min-width': '400px',
+                            'max-width': '600px',
+                        })
                     
-                    st.dataframe(styled_table, use_container_width=True)
+                        st.dataframe(styled_table, use_container_width=True)
+
 
 # --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
