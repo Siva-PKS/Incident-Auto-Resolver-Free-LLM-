@@ -251,5 +251,8 @@ if 'suggestion' in st.session_state:
             if email_sent:
                 st.success(f"📤 Suggested resolution emailed to {manual_email}.")
                 st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
+                manual_email = ""
+                desc_input = ""
+                user_email = ""
             else:
                 st.error("❌ Failed to send the email. Please check the address or try again later.")
