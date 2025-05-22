@@ -206,8 +206,7 @@ if st.button("Resolve Ticket"):
                 )
                 if email_sent:
                     st.info("📩 Resolution email sent to your provided email.")
-        else:
-                else:
+        else:               
                     st.warning("No exact match. Retrieving similar tickets and generating resolution...")
                     retrieved = retrieve_similar(desc_input)
                     st.subheader("📜 Similar Past Tickets")
