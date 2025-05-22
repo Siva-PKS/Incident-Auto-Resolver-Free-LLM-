@@ -126,6 +126,7 @@ def load_llm_pipeline():
 llm_pipeline = load_llm_pipeline()
 
 def generate_llm_response(description, retrieved_df, assigned_group=None):
+    # Filter retrieved_df by assigned_group (case-insensitive) and status 'closed' if assigned_group provided
     if assigned_group:
         retrieved_df = retrieved_df[
             (retrieved_df['assignedgroup'].str.lower() == assigned_group.lower()) &
@@ -133,36 +134,37 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
         ]
 
     if retrieved_df.empty:
-        return "### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group."
+        return ("### ℹ️ No relevant previous tickets found.", "Unable to find similar closed tickets for this assigned group.")
 
-    context = "\n\n".join([
-        f"Ticket ID: {row.ticket_id}\n"
-        f"Summary: {row.summary}\n"
-        f"Description: {row.description}\n"
-        f"Resolution: {row.resolution}\n"
-        f"Assigned Group: {row.assignedgroup}\n"
-        f"Priority: {row.priority}\n"
-        f"Status: {row.status}\n"
-        f"Date: {row.date}"
-        for _, row in retrieved_df.iterrows()
-    ])
+    # Prepare ticket IDs string
+    ticket_ids = ", ".join(retrieved_df['ticket_id'].astype(str).unique())
 
+    # Create prompt WITHOUT full context, just the description and mention that tickets exist
     llm_prompt = (
-        f"User Issue:\n{description}\n\n"       
-        f"Based on these, suggest a concise and helpful resolution to the user's issue:"
+        f"User Issue:\n{description}\n\n"
+        f"Based on previous similar tickets with IDs: {ticket_ids}, suggest a concise and helpful resolution:"
     )
 
+    # Generate the LLM response
     output = llm_pipeline(llm_prompt, max_new_tokens=200)
     generated_text = output[0]['generated_text'].strip()
-    formatted_response = generated_text.replace('. ', '.\n')
 
+    # Format output as requested
+    formatted_response = (
+        f"Resolution: {generated_text}\n"
+        f"Used Similar Ticket(s): {ticket_ids}"
+    )
+
+    # Optionally, you can format prompt if you want to show on UI (or return None)
     formatted_prompt = (
         f"### 🧾 User Issue\n"
-        f"{description}\n\n"           
-        f"### 💡 Suggested Resolution"
+        f"{description}\n\n"
+        f"### 💡 Suggested Resolution\n"
+        f"{formatted_response}"
     )
 
     return formatted_prompt, formatted_response
+
 
 
 # ---------------------
