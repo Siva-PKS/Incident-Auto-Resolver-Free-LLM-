@@ -15,7 +15,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import smtplib
-import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from sentence_transformers import SentenceTransformer
@@ -28,11 +27,6 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USER = "spkincident@gmail.com"
 SMTP_PASSWORD = "jaao zsnq peke klgo"
-
-# ---------------------
-# 🔵 Logging configuration (commented out as per request)
-# ---------------------
-# logging.basicConfig(filename='email_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ---------------------
 # 🕕 Load tickets
@@ -82,18 +76,6 @@ def find_exact_match(description):
     match_rows = closed_df[closed_df['description'].str.lower() == desc_lower]
     return match_rows.iloc[0] if not match_rows.empty else None
 
-def check_open_tickets_for_auto_email(description, assigned_group):
-    desc_lower = description.lower()
-    assigned_group_lower = assigned_group.lower()
-    filtered = open_df[
-        (open_df['description'].str.lower() == desc_lower) &
-        (open_df['assignedgroup'].str.lower() == assigned_group_lower) &
-        (open_df['status'].str.lower() == 'closed')
-    ]
-    if not filtered.empty:
-        return filtered.iloc[0]
-    return None
-
 # ---------------------
 # 📧 Email sender
 # ---------------------
@@ -110,14 +92,12 @@ def send_email(subject, body, to_email):
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
-        # logging.info(f"Email successfully sent to {to_email} | Subject: {subject}")
         return True
-    except Exception as e:
-        # logging.error(f"Failed to send email to {to_email} | Subject: {subject} | Error: {e}")
+    except Exception:
         return False
 
 # ---------------------
-# 🧬 Local LLM + RAG resolution using Hugging Face model
+# 🧬 Local LLM + RAG resolution
 # ---------------------
 @st.cache_resource(show_spinner=False)
 def load_llm_pipeline():
@@ -153,14 +133,9 @@ def generate_llm_response(description, retrieved_df, assigned_group=None):
     final_response = generated_text.replace('. ', '.\n')
 
     tickets_used = ", ".join([f"{row.ticket_id}" for _, row in top_k.iterrows()])
-
     formatted_prompt = f"Resolution:\n{final_response}\n\nUsed Similar Ticket(s): {tickets_used}"
 
     return formatted_prompt, final_response
-
-
-
-
 
 # ---------------------
 # 🌐 Streamlit UI
@@ -176,12 +151,21 @@ if st.button("Resolve Ticket"):
     else:
         match = find_exact_match(desc_input)
         if match is not None:
-            st.success("✅ Exact match found!")
-            st.write("**Resolution:**", match['resolution'])
+            desc_lower = match['description'].lower()
+            group_lower = match['assignedgroup'].lower()
 
-            auto_email_ticket = check_open_tickets_for_auto_email(match['description'], match['assignedgroup'])
-            if auto_email_ticket is not None:
-                auto_email = auto_email_ticket.get('email', None)
+            open_match = open_df[
+                (open_df['description'].str.lower() == desc_lower) &
+                (open_df['assignedgroup'].str.lower() == group_lower) &
+                (open_df['status'].str.lower() == 'inprogress')
+            ]
+
+            if not open_match.empty:
+                st.success("✅ Exact match found and validated with open in-progress ticket.")
+                st.write("**Resolution:**", match['resolution'])
+                st.markdown(f"**🔎 Reference Ticket ID:** `{match['ticket_id']}`")
+
+                auto_email = open_match.iloc[0].get('email', None)
                 if auto_email:
                     email_sent = send_email(
                         subject=f"Issue Resolved: {match['description']}",
@@ -191,31 +175,25 @@ if st.button("Resolve Ticket"):
                     if email_sent:
                         st.info(f"📩 Resolution email sent automatically to {auto_email}")
                 else:
-                    st.warning("No email found in matching open ticket for auto sending.")
+                    st.warning("⚠️ No email found in matching open ticket for auto sending.")
             else:
-                email_sent = send_email(
-                    subject=f"Issue Resolved: {match['description']}",
-                    body=f"Hello,\n\nHere is the resolution for your reported issue:\n\n{match['resolution']}\n\nRegards,\nSupport Team",
-                    to_email=user_email
-                )
-                if email_sent:
-                    st.info("📩 Resolution email sent to your provided email.")
+                st.warning("⚠️ No matching in-progress open ticket found. Falling back to LLM suggestion.")
+                retrieved = retrieve_similar(desc_input)
+                formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
+                st.subheader("🤖 Suggested Resolution")
+                st.write(suggestion)
+                st.session_state['suggestion'] = suggestion
         else:
             st.warning("No exact match. Retrieving similar tickets and generating resolution...")
             retrieved = retrieve_similar(desc_input)
-            st.subheader("📜 Similar Past Tickets")
             st.dataframe(retrieved[['ticket_id', 'summary', 'description', 'resolution', 'assignedgroup', 'status', 'date']])
-
             formatted_prompt, suggestion = generate_llm_response(desc_input, retrieved)
-            st.subheader("🤔 Suggested Resolution")
+            st.subheader("🤖 Suggested Resolution")
             st.write(suggestion)
-
             st.session_state['suggestion'] = suggestion
 
-# --- Manual email sending of suggested resolution ---
 if 'suggestion' in st.session_state:
     manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
-
     if st.button("✉️ Send Suggested Resolution Email"):
         manual_email = st.session_state.get("manual_email", "").strip()
         if not manual_email:
