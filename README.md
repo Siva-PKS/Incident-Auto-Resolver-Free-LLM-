@@ -49,6 +49,9 @@ email_password = "your_app_specific_password"
 
 streamlit run app.py
 
+## 📷 Screenshots
+ -- Soon will be added
+
 ## ✅ Example Workflow
 
 Enter a new incident description.
