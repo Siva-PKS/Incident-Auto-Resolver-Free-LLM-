@@ -183,23 +183,27 @@ matched_open_ticket = open_df[
     open_df['description'].str.strip().str.lower() == desc_input.strip().lower()
 ]
 
+# --- Attempt to auto-fill email from best open ticket match ---
 def find_best_open_ticket_match(description, open_df):
-    if open_df.empty:
+    if open_df.empty or not description:
         return None
 
-    model = SentenceTransformer('all-MiniLM-L6-v2')  # Reuse global if already loaded
     query_emb = model.encode(description)
-
     open_df = open_df.copy()
     open_df['embedding'] = open_df['description'].apply(lambda x: model.encode(x).tolist())
     open_df['similarity'] = open_df['embedding'].apply(lambda x: cosine_similarity(np.array(query_emb), np.array(x)))
 
     open_df = open_df.sort_values(by='similarity', ascending=False)
 
-    if not open_df.empty:
+    if not open_df.empty and open_df.iloc[0]['similarity'] > 0.6:  # You can tune this threshold
         return open_df.iloc[0]
-    else:
-        return None
+    return None
+
+# Auto-fill user email from best matched open ticket
+best_open_ticket = find_best_open_ticket_match(desc_input, open_df)
+if best_open_ticket is not None and not user_email:
+    user_email = best_open_ticket.get("email", "")
+
 
 user_email_default = ""
 if desc_input.strip():  # Only run if description is entered
@@ -207,7 +211,8 @@ if desc_input.strip():  # Only run if description is entered
     if best_open_ticket is not None and 'email' in best_open_ticket:
         user_email_default = best_open_ticket['email']
 
-user_email = st.text_input("📧 Customer Email", value=user_email_default)
+user_email = st.text_input("📧 Customer Email", value=user_email)
+
 
 
 
