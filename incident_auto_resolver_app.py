@@ -199,12 +199,6 @@ def find_best_open_ticket_match(description, open_df):
         return open_df.iloc[0]
     return None
 
-# Auto-fill user email from best matched open ticket
-best_open_ticket = find_best_open_ticket_match(desc_input, open_df)
-if best_open_ticket is not None and not user_email:
-    user_email = best_open_ticket.get("email", "")
-
-
 user_email_default = ""
 if desc_input.strip():  # Only run if description is entered
     best_open_ticket = find_best_open_ticket_match(desc_input, open_df)
