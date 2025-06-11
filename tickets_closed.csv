@@ -1,9 +1,9 @@
- ticket_id,summary,description,resolution,assignedgroup,priority,status,date
+ticket_id,summary,description,resolution,assignedgroup,priority,status,date
 TICKET-10001,Email service down,Unable to send emails from Outlook,Restart mail server,Email Team,High,closed,2025-04-10
 TICKET-10002,VPN not working,VPN disconnects frequently,Reset VPN profile,Network Ops,Low,closed,2025-04-11
 TICKET-10003,System restarts auto,System restarts automatically after blue screen,Reinstall complete drivers,Network Ops,High,closed,2025-04-12
 TICKET-10004,Slow internet,Internet speed is much slower than usual,Reset modem and router,Network Ops,Medium,closed,2025-04-13
-TICKET-10005,Software crash,Application crashes when opening files,Reinstall software,App Support,pending,2025-04-14
+TICKET-10005,Software crash,Application crashes when opening files,Reinstall software,App Support,Medium,pending,2025-04-14
 TICKET-10006,File access denied,User can't access shared folder on network drive,Check permissions and restart,App Support,Low,resolved,2025-04-15
 TICKET-10007,Windows update stuck,Update is stuck at 99% on Windows 10,Force restart and update,Email Team,High,assigned,2025-04-16
 TICKET-10008,Wi-Fi disconnecting,Wi-Fi keeps disconnecting intermittently,Reconfigure Wi-Fi settings,Network Ops,Medium,closed,2025-04-17
