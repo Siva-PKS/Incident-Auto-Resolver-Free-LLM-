@@ -201,8 +201,12 @@ def find_best_open_ticket_match(description, open_df):
     else:
         return None
 
-best_open_ticket = find_best_open_ticket_match(desc_input, open_df)
-user_email_default = best_open_ticket['email'] if best_open_ticket is not None and 'email' in best_open_ticket else ""
+user_email_default = ""
+if desc_input.strip():  # Only run if description is entered
+    best_open_ticket = find_best_open_ticket_match(desc_input, open_df)
+    if best_open_ticket is not None and 'email' in best_open_ticket:
+        user_email_default = best_open_ticket['email']
+
 user_email = st.text_input("📧 Customer Email", value=user_email_default)
 
 
