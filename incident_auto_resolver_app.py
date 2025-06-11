@@ -183,13 +183,26 @@ matched_open_ticket = open_df[
     open_df['description'].str.strip().str.lower() == desc_input.strip().lower()
 ]
 
-# Autofill email from matched ticket if found
-user_email_default = (
-    matched_open_ticket.iloc[0]['email']
-    if not matched_open_ticket.empty and 'email' in matched_open_ticket.columns
-    else ""
-)
+def find_best_open_ticket_match(description, open_df):
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    desc_emb = model.encode(description).astype('float32')
+    
+    open_df = open_df.copy()
+    open_df['embedding'] = open_df['description'].apply(lambda x: model.encode(x).astype('float32'))
+    
+    open_df['similarity'] = open_df['embedding'].apply(
+        lambda emb: np.dot(emb, desc_emb) / (np.linalg.norm(emb) * np.linalg.norm(desc_emb))
+    )
+    
+    best_match = open_df.sort_values(by='similarity', ascending=False).iloc[0]
+    
+    if best_match['similarity'] > 0.7:  # only if a reasonably close match
+        return best_match
+    else:
+        return None
 
+best_open_ticket = find_best_open_ticket_match(desc_input, open_df)
+user_email_default = best_open_ticket['email'] if best_open_ticket is not None and 'email' in best_open_ticket else ""
 user_email = st.text_input("📧 Customer Email", value=user_email_default)
 
 
