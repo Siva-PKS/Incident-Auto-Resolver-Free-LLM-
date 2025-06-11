@@ -170,6 +170,23 @@ def generate_llm_response(description, retrieved_df):
     return ticket_info, formatted_response
 
 
+def find_best_open_ticket_match(description, open_df):
+    if open_df.empty or not description:
+        return None
+
+    query_emb = model.encode(description)
+    open_df = open_df.copy()
+    open_df['embedding'] = open_df['description'].apply(lambda x: model.encode(x).tolist())
+    open_df['similarity'] = open_df['embedding'].apply(lambda x: cosine_similarity(np.array(query_emb), np.array(x)))
+
+    open_df = open_df.sort_values(by='similarity', ascending=False)
+
+    if not open_df.empty and open_df.iloc[0]['similarity'] > 0.6:  # Tune as needed
+        return open_df.iloc[0]
+    return None
+
+
+
 # ---------------------
 # 🌐 Streamlit UI
 # ---------------------
