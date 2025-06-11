@@ -124,7 +124,8 @@ def send_email(subject, body, to_email):
         # logging.info(f"Email successfully sent to {to_email} | Subject: {subject}")
         return True
     except Exception as e:
-        # logging.error(f"Failed to send email to {to_email} | Subject: {subject} | Error: {e}")         
+        # logging.error(f"Failed to send email to {to_email} | Subject: {subject} | Error: {e}")
+        st.error(f"❌ Email send error: {e}")
         return False
 
 # ---------------------
