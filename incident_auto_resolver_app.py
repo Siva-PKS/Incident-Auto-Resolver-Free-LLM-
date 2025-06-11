@@ -57,6 +57,10 @@ open_df = load_open_tickets()
 # ---------------------
 # 🔍 Load model & embeddings
 # ---------------------
+
+# using the all-MiniLM-L6-v2 model from Sentence Transformers for embedding-based semantic search.
+# all-MiniLM-L6-v2 is a lightweight, high-speed sentence embedding model.
+# It's commonly used for semantic similarity, clustering, and retrieval tasks.
 @st.cache_resource(show_spinner=False)
 def load_model_and_embeddings(df):
     model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -73,6 +77,8 @@ model, embeddings, closed_df = load_model_and_embeddings(closed_df)
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
+# The function retrieve_similar(description, k=3) retrieves top-K similar past tickets using vector similarity (MiniLM + cosine similarity).
+# These are used to augment the prompt given to the LLM (Flan-T5) for generating a resolution
 def retrieve_similar(description, k=3):
     query_emb = model.encode(description).astype('float32')
     sims = np.array([cosine_similarity(query_emb, emb) for emb in embeddings])
