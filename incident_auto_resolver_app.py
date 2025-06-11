@@ -177,13 +177,21 @@ def generate_llm_response(description, retrieved_df):
 st.title("🎻 Incident Auto-Resolver (RAG + Local LLM + Auto Email)")
 
 desc_input = st.text_area("📝 Enter new incident description:")
-# Auto-fetch email from open tickets if description matches
-matched_open_ticket = open_df[open_df['description'].str.lower() == desc_input.lower()]
-if not matched_open_ticket.empty and 'email' in matched_open_ticket.columns:
-    user_email_default = matched_open_ticket.iloc[0]['email']
-else:
-    user_email_default = ""
+
+# Match the description in open tickets
+matched_open_ticket = open_df[
+    open_df['description'].str.strip().str.lower() == desc_input.strip().lower()
+]
+
+# Autofill email from matched ticket if found
+user_email_default = (
+    matched_open_ticket.iloc[0]['email']
+    if not matched_open_ticket.empty and 'email' in matched_open_ticket.columns
+    else ""
+)
+
 user_email = st.text_input("📧 Customer Email", value=user_email_default)
+
 
 
 if st.button("Resolve Ticket"):
