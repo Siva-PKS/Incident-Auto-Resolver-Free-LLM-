@@ -170,7 +170,6 @@ def generate_llm_response(description, retrieved_df):
     return ticket_info, formatted_response
 
 
-
 # ---------------------
 # 🌐 Streamlit UI
 # ---------------------
@@ -178,35 +177,20 @@ st.title("🎻 Incident Auto-Resolver (RAG + Local LLM + Auto Email)")
 
 desc_input = st.text_area("📝 Enter new incident description:")
 
-# Match the description in open tickets
-matched_open_ticket = open_df[
-    open_df['description'].str.strip().str.lower() == desc_input.strip().lower()
-]
-
-# --- Attempt to auto-fill email from best open ticket match ---
-def find_best_open_ticket_match(description, open_df):
-    if open_df.empty or not description:
-        return None
-
-    query_emb = model.encode(description)
-    open_df = open_df.copy()
-    open_df['embedding'] = open_df['description'].apply(lambda x: model.encode(x).tolist())
-    open_df['similarity'] = open_df['embedding'].apply(lambda x: cosine_similarity(np.array(query_emb), np.array(x)))
-
-    open_df = open_df.sort_values(by='similarity', ascending=False)
-
-    if not open_df.empty and open_df.iloc[0]['similarity'] > 0.6:  # You can tune this threshold
-        return open_df.iloc[0]
-    return None
-
 user_email = ""
-best_open_ticket = find_best_open_ticket_match(desc_input, open_df)
-if best_open_ticket is not None:
-    user_email = best_open_ticket.get("email", "") or user_email
-user_email = st.text_input("📧 Customer Email", value=user_email)
+
+# Only search for best open ticket if a description is entered
+if desc_input.strip():
+    best_open_ticket = find_best_open_ticket_match(desc_input, open_df)
+    if best_open_ticket is not None:
+        user_email = best_open_ticket.get("email", "")
+    else:
+        user_email = ""
+
+user_email = st.text_input("📧 Customer Email", value=user_email or "")
 
 if st.button("Resolve Ticket"):
-    if not desc_input or not user_email:
+    if not desc_input.strip() or not user_email.strip():
         st.warning("Please fill in the incident description and email.")
     else:
         match = find_exact_match(desc_input)
@@ -259,24 +243,3 @@ if st.button("Resolve Ticket"):
                     }
             else:
                 st.warning("No similar tickets found.")
-
-
-# --- Manual email sending of suggested resolution ---
-if 'suggestion' in st.session_state:
-    manual_email = st.text_input("Enter email to send suggested resolution:", key="manual_email")
-
-    if st.button("✉️ Send Suggested Resolution Email"):
-        manual_email = st.session_state.get("manual_email", "").strip()
-        if not manual_email:
-            st.warning("Please enter an email address to send the suggested resolution.")
-        else:
-            email_sent = send_email(
-                subject="Suggested Resolution to Your Reported Issue",
-                body=f"Hello,\n\nBased on your issue:\n\"{desc_input}\"\n\nHere is a suggested resolution:\n\n{st.session_state['suggestion']}\n\nRegards,\nSupport Team",
-                to_email=manual_email
-            )
-            if email_sent:
-                st.success(f"📤 Suggested resolution emailed to {manual_email}.")
-                st.code(f"Subject: Suggested Resolution\nTo: {manual_email}\n\n{st.session_state['suggestion']}", language='text')
-            else:
-                st.error("❌ Failed to send the email. Please check the address or try again later.")
