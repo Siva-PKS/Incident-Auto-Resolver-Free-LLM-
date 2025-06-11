@@ -184,20 +184,20 @@ matched_open_ticket = open_df[
 ]
 
 def find_best_open_ticket_match(description, open_df):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    desc_emb = model.encode(description).astype('float32')
-    
+    if open_df.empty:
+        return None
+
+    model = SentenceTransformer('all-MiniLM-L6-v2')  # Reuse global if already loaded
+    query_emb = model.encode(description)
+
     open_df = open_df.copy()
-    open_df['embedding'] = open_df['description'].apply(lambda x: model.encode(x).astype('float32'))
-    
-    open_df['similarity'] = open_df['embedding'].apply(
-        lambda emb: np.dot(emb, desc_emb) / (np.linalg.norm(emb) * np.linalg.norm(desc_emb))
-    )
-    
-    best_match = open_df.sort_values(by='similarity', ascending=False).iloc[0]
-    
-    if best_match['similarity'] > 0.7:  # only if a reasonably close match
-        return best_match
+    open_df['embedding'] = open_df['description'].apply(lambda x: model.encode(x).tolist())
+    open_df['similarity'] = open_df['embedding'].apply(lambda x: cosine_similarity(np.array(query_emb), np.array(x)))
+
+    open_df = open_df.sort_values(by='similarity', ascending=False)
+
+    if not open_df.empty:
+        return open_df.iloc[0]
     else:
         return None
 
