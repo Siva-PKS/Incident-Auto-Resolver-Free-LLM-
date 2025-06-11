@@ -1,10 +1,10 @@
 ticket_id,summary,description,resolution,assignedgroup,priority,status,date
 TICKET-10001,Email service down,Unable to send emails from Outlook,Restart mail server,Email Team,High,closed,2025-04-10
 TICKET-10002,VPN not working,VPN disconnects frequently,Reset VPN profile,Network Ops,Low,closed,2025-04-11
-TICKET-10003,Printer offline,Printer is not showing up on the network,Reinstall printer drivers,Network Ops,High,closed,2025-04-12
+TICKET-10003,System restarts auto,System restarts automatically after blue screen,Reinstall complete drivers/restore last known,Network Ops,High,closed,2025-04-12
 TICKET-10004,Slow internet,Internet speed is much slower than usual,Reset modem and router,Network Ops,Medium,closed,2025-04-13
-TICKET-10005,Software crash,Application crashes when opening files,Reinstall software,Email Team,Low,pending,2025-04-14
-TICKET-10006,File access denied,Can't open shared files on the network drive,Check permissions and restart,Network Ops,Low,resolved,2025-04-15
+TICKET-10005,Software crash,Application crashes when opening files,Reinstall software,App Support,pending,2025-04-14
+TICKET-10006,File access denied,User can't access shared folder on network drive,Check permissions and restart,App Support,Low,resolved,2025-04-15
 TICKET-10007,Windows update stuck,Update is stuck at 99% on Windows 10,Force restart and update,Email Team,High,assigned,2025-04-16
 TICKET-10008,Wi-Fi disconnecting,Wi-Fi keeps disconnecting intermittently,Reconfigure Wi-Fi settings,Network Ops,Medium,closed,2025-04-17
 TICKET-10009,Email sync issue,Emails are not syncing with mobile device,Reconfigure email account,Email Team,Low,closed,2025-04-18
@@ -17,5 +17,5 @@ TICKET-10015,Video conferencing issue,Microphone not working in Teams meeting,Ch
 TICKET-10016,Drive full,User unable to save files due to full disk,Clear temp files or move data to cloud,Storage Team,Medium,closed,2025-04-25
 TICKET-10017,Missing desktop icons,All icons disappeared from desktop,Restart Windows Explorer process,App Support,Low,closed,2025-04-26
 TICKET-10018,Shared drive access,User cannot access department shared folder,Verify permissions and re-map drive,Infrastructure Ops,Medium,closed,2025-04-27
-TICKET-10019,Slow boot time,Computer takes long to start up,Disable startup apps and defragment disk,App Support,Low,closed,2025-04-28
+TICKET-10019,Password reset link expired,Users report password reset links expired quickly,Extend the expiry date for further more one year.,App Support,Low,closed,2025-04-28
 TICKET-10020,Browser crashing,Chrome crashes while browsing certain websites,Reset browser settings and disable extensions,App Support,Low,closed,2025-04-29
