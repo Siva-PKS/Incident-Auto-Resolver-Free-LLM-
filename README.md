@@ -1,3 +1,5 @@
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=sivapk.my-project&left_color=black&right_color=blue&left_text=Visitors)
+
 # 🎻 Incident Auto-Resolver (RAG + Local LLM + Auto Email)
 
 This project is a **Streamlit-based web app** that automates incident resolution by combining **Retrieval-Augmented Generation (RAG)**, **local LLMs**, and **email automation**. It helps support teams resolve incident tickets quickly by retrieving similar past tickets and suggesting responses—automatically sending the resolution via email when possible.
